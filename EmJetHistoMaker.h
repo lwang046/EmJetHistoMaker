@@ -53,7 +53,8 @@ class EmJetHistoMaker : public HistoMakerBase
   double CalculateEventWeight(long eventnumber);
   bool SelectJet(int jet_index);
   bool SelectJet_egammacut(int jet_index);
-  bool SelectJet_emerging(int jet_index);
+  bool SelectJet_almostemerging(int jet_index);
+  bool SelectJet_ipCut(int jet_index);
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
   Sample sample_;
@@ -104,12 +105,46 @@ void EmJetHistoMaker::InitHistograms()
 
 void EmJetHistoMaker::FillHistograms(long eventnumber)
 {
+  double w = CalculateEventWeight(eventnumber);
   if (debug==1) std::cout << "Entering FillHistograms" << std::endl;
 
   FillPileupHistograms(eventnumber, "");
   if (pileupOnly_) return;
 
   FillEventHistograms(eventnumber, "");
+  int nAlmostEmerging = 0;
+  int nEmerging = 0;
+  bool pt_cuts[4];
+  pt_cuts[0] = (*jet_pt)[0] > 400                 ;
+  pt_cuts[1] = (*jet_pt)[1] > 200 && pt_cuts[1-1] ;
+  pt_cuts[2] = (*jet_pt)[2] > 200 && pt_cuts[2-1] ;
+  pt_cuts[3] = (*jet_pt)[3] > 100 && pt_cuts[3-1] ;
+  for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
+    if (pt_cuts[3]) {
+      if ( SelectJet_egammacut(ij) && SelectJet_almostemerging(ij) ) nAlmostEmerging++;
+      if ( SelectJet_egammacut(ij) && SelectJet_almostemerging(ij) && SelectJet_ipCut(ij) ) nEmerging++;
+    }
+  }
+  {
+    double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
+    const int nCut = 9;
+    bool cuts[nCut];
+    cuts[0] = true                            ;
+    cuts[1] = true                            ;
+    cuts[2] = cuts[2-1] && ht4 > 1000         ;
+    cuts[3] = cuts[3-1] && (*jet_pt)[0] > 400 ;
+    cuts[4] = cuts[4-1] && (*jet_pt)[1] > 200 ;
+    cuts[5] = cuts[5-1] && (*jet_pt)[2] > 200 ;
+    cuts[6] = cuts[6-1] && (*jet_pt)[3] > 100 ;
+    cuts[7] = cuts[7-1] && nAlmostEmerging <4 ;
+    cuts[8] = cuts[8-1] && nEmerging >= 2     ;
+    for (int ic = 0; ic < nCut; ic ++) {
+      if ( cuts[ic] ) histo_->hist1d["cutflow2"]->Fill(ic, w);
+    }
+    if (cuts[8]) {
+      FillEventHistograms(eventnumber, "/EVTpvpass");
+    }
+  }
   // Event cut 1
   // FillEventHistograms(eventnumber, "/EVTCUT1");
   // Event cut 2
@@ -117,7 +152,6 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
 
   // Fill cut flow histogram for comparison with Sarah's cut flow
   {
-    double w = CalculateEventWeight(eventnumber);
 
     double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
     histo_->hist1d["ht4"]->Fill(ht4, w);
@@ -157,6 +191,7 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
 
   double w = CalculateEventWeight(eventnumber);
 
+  int nEmerging = 0;
   // Jet loop
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
     FillJetHistograms(eventnumber, ij, ""+tag);
@@ -165,10 +200,12 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
     }
     if (SelectJet_egammacut(ij)) {
       FillJetHistograms(eventnumber, ij, "/JTegammacut"+tag);
-      if (SelectJet_emerging(ij)) {
+      if (SelectJet_almostemerging(ij)) {
         FillJetHistograms(eventnumber, ij, "/JTemerging"+tag);
+        nEmerging++;
       }
     }
+    histo_->hist1d["nEmerging"]->Fill(nEmerging, w);
     // Jet cut 1
     // FillJetHistograms(eventnumber, "/JETCUT1");
     // Jet cut 2
@@ -366,14 +403,28 @@ bool EmJetHistoMaker::SelectJet_egammacut(int ij)
   bool result = true;
   bool cut_nef = (*jet_nef)[ij] < 0.9             ; result = result && cut_nef      ;
   bool cut_cef = (*jet_cef)[ij] < 0.9             ; result = result && cut_cef      ;
+  bool cut_eta = abs((*jet_eta)[ij]) < 2.0        ; result = result && cut_eta      ;
   bool cut_tracks = nTrackPassingCut > 0          ; result = result && cut_tracks   ;
   return result;
 }
 
-bool EmJetHistoMaker::SelectJet_emerging(int ij)
+bool EmJetHistoMaker::SelectJet_almostemerging(int ij)
 {
   bool result = true;
-  bool cut_alphaMax = (*jet_alphaMax)[ij] < 0.2   ; result = result && cut_alphaMax ;
+  bool cut_alphaMax = (*jet_alphaMax)[ij] < 0.04  ; result = result && cut_alphaMax ;
+  return result;
+}
+
+bool EmJetHistoMaker::SelectJet_ipCut(int ij)
+{
+  bool result = true;
+  double maxIp = 0.;
+  for (unsigned itk = 0; itk < (*track_pt)[ij].size(); itk++) {
+    if( (*track_source)[ij][itk] == 0 ) {
+      if ( (*track_ipXY)[ij][itk] > maxIp ) maxIp = (*track_ipXY)[ij][itk];
+    }
+  }
+  bool ipCut = maxIp > 0.4;
   return result;
 }
 

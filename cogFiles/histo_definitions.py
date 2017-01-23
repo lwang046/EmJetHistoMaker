@@ -46,8 +46,9 @@ def user_define_histos():
     vbins = user_define_bins()
     histo_dict = OrderedDict()
     name = 'cutflow'                   ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
+    name = 'cutflow2'                  ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
-    name = 'nJetPostCut'               ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
+    name = 'nEmerging'                 ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'ht4'                       ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
     name = 'ht'                        ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
     name = 'sigmaPt'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1500 ) )
@@ -142,6 +143,14 @@ def user_define_histos():
             histo_sig = clone_object(histo, postfix='sig')
             histo_sig_dict[histo_sig.name] = histo_sig
     histo_dict.update(histo_sig_dict)
+
+    # Event plot variations
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_':
+            histo_clone = clone_object(histo, postfix='EVTpvpass')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
 
     return histo_dict
 
