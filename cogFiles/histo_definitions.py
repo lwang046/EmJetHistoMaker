@@ -57,26 +57,33 @@ def user_define_histos():
     name = 'vertex_mass'               ; histo_dict[name] = Histo1F(name , vbins[name]             )
     name = 'jet_pt'                    ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
     name = 'jet_eta'                   ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
-    name = 'jet_nTracks'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
+    name = 'jet_phi'                   ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
+    name = 'jet_nTrack'                ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
+    name = 'jet_medianIP'              ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
+    name = 'jet_nTrackPostCut'         ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
+    name = 'jet_medianIPPostCut'       ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'jet_medianLogIpSig'        ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'jet_medLogIpSig'           ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'jet_alphaMax'              ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'jet_nDarkPions'            ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'jet_nVertex'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'jet_prompt_frac_E'         ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 2.   ) )
-    name = 'jet_displaced_frac'        ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 2.   ) )
+    name = 'jet_prompt_frac'           ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 2.   ) )
+    name = 'jet_disp_frac'             ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 2.   ) )
     name = 'jet_alphaMaxNeg'           ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'jet_cef'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'jet_nef'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
+    name = 'jet_missInnerHit_frac'     ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'sumMedianLogIpSig'         ; histo_dict[name] = Histo1F(name , Bins(100 , -25 ,  25  ) )
     name = 'track_pt'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
     name = 'track_eta'                 ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'track_phi'                 ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'track_ipXY'                ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
+    name = 'track_ipXYb'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 2.  ) )
     name = 'track_ipSig'               ; histo_dict[name] = Histo1F(name , vbins['track_ipSig']    )
     name = 'track_logIpSig'            ; histo_dict[name] = Histo1F(name , Bins(100 , -5  ,   5  ) )
     name = 'track_nHits'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
-    name = 'track_nMissHits'           ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
+    name = 'track_nMissInnerHits'      ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'track_missHitFrac'         ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  ,   5. ) )
     name = 'track_nTrkLayers'          ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'track_nMissInnerTrkLayers' ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
@@ -84,6 +91,7 @@ def user_define_histos():
     name = 'track_nMissInnerPxlLayers' ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'track_nNetMissInnerLayers' ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'track_missLayerFrac'       ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  ,   5. ) )
+    name = 'track_quality'             ; histo_dict[name] = Histo1F(name , Bins(200 , 0.  , 200  ) )
     name = 'track_algo'                ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
     name = 'track_originalAlgo'        ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
     name = 'track_dRToJetAxis'         ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 0.5  ) )
@@ -103,9 +111,29 @@ def user_define_histos():
     h = histo_combine1Dto2D( histo_dict['track_nHits'] , histo_dict['track_ipXY'] , ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['track_nHits'] , histo_dict['track_ipSig'] , ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_medLogIpSig'], ); histo_2d_dict[h.name] = h
-    h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_prompt_frac_E'], ); histo_2d_dict[h.name] = h
-    h = histo_combine1Dto2D( histo_dict['jet_alphaMaxNeg'], histo_dict['jet_displaced_frac'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_prompt_frac'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_disp_frac'], ); histo_2d_dict[h.name] = h
     histo_dict.update(histo_2d_dict)
+
+    # Track plot variations
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name[:6]=='track_':
+            histo_clone = clone_object(histo, postfix='TKprompt')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='TKdisplaced')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
+
+    # Jet plot variations
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_':
+            histo_clone = clone_object(histo, postfix='JTegammacut')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='JTemerging')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
 
     # Define signal histos, by copying all jet, track and vertex histograms
     histo_sig_dict = OrderedDict()
@@ -116,6 +144,7 @@ def user_define_histos():
     histo_dict.update(histo_sig_dict)
 
     return histo_dict
+
 
 def user_define_histo_vectors():
     """Define histogram vectors in this function"""
@@ -161,7 +190,32 @@ def generate_histo_map_init():
     for name, histo in user_define_histos().iteritems():
         outputline( construct_histo_map_init(histo) )
 
+def calculate_index(histo_dict):
+    """Takes histo_dict and calculates index in vectors based on their order in dictionary and their type (1D vs 2D)"""
+    index_1d = 0
+    index_2d = 0
+    histo_id_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if type(histo).__name__ == 'Histo1F':
+            histo_id_dict[name] = index_1d
+            index_1d += 1
+        elif type(histo).__name__ == 'Histo2F':
+            histo_id_dict[name] = index_2d
+            index_2d += 1
+    return histo_id_dict
+
+def generate_histo_index():
+    histo_id_dict = calculate_index( user_define_histos() )
+    for name, histo in user_define_histos().iteritems():
+        template_str = 'if (name=="{name}") return {index};'
+        index = histo_id_dict[name]
+        output_str = template_str.format(name=name, index=index)
+        outputline(output_str)
+
 if __name__=='__main__':
+    print 'generate_histo_index():'
+    generate_histo_index()
+    print''
     print 'generate_vbin_decl():'
     generate_vbin_decl()
     print''
