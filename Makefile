@@ -18,7 +18,7 @@ LDLIBS=`root-config --glibs`
 
 # define any directories containing header files other than /usr/include
 #
-INCLUDES = -Imakeclass
+INCLUDES = -Imakeclass -Itclap
 # INCLUDES = -I/home/newhall/include  -I../include
 
 # define library paths in addition to /usr/lib

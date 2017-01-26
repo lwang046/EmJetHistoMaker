@@ -190,11 +190,11 @@ BaseClass::BaseClass(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root");
+         f = new TFile("/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root");
       }
-      TDirectory * dir = (TDirectory*)f->Get("/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root:/emJetAnalyzer");
+      TDirectory * dir = (TDirectory*)f->Get("/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root:/emJetAnalyzer");
       dir->GetObject("emJetTree",tree);
 
    }

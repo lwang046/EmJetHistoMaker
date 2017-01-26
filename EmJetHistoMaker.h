@@ -224,7 +224,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   double medianIP = 0.;
   {
     vector<double> vector_ipXY;
-    for (unsigned itk=0; itk < (*track_pt).size(); itk++) {
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
       if ( (*track_source)[ij][itk] == 0 ) {
         vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
         FillTrackHistograms(eventnumber, ij, itk, tag);
@@ -254,7 +254,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   double medianIPPostCut = 0.;
   {
     vector<double> vector_ipXY;
-    for (unsigned itk=0; itk < (*track_pt).size(); itk++) {
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
       if ( (*track_source)[ij][itk] == 0 && (*track_algo)[ij][itk] >= 6 ) {
         vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
         FillTrackHistograms(eventnumber, ij, itk, tag);
@@ -281,7 +281,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   {
     double prompt_sum = 0;
     double disp_sum = 0;
-    for (unsigned itk=0; itk < (*track_pt).size(); itk++) {
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
       if ( (*track_source)[ij][itk] == 0 ) {
         if ( (*track_ipXY)[ij][itk] > 0.1 ) {
           disp_sum += (*track_pt)[ij][itk];
@@ -300,7 +300,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   {
     double missInnerHit_sum = 0;
     double sum = 0;
-    for (unsigned itk=0; itk < (*track_pt).size(); itk++) {
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
       if ( (*track_source)[ij][itk] == 0 ) {
         if ( (*track_nMissInnerHits)[ij][itk] >= 1 ) {
           missInnerHit_sum += (*track_pt)[ij][itk];
