@@ -316,6 +316,11 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   histo_->hist1d["jet_eta"+tag]->Fill((*jet_eta)[ij], w);
   histo_->hist1d["jet_phi"+tag]->Fill((*jet_phi)[ij], w);
   histo_->hist1d["jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], w);
+  histo_->hist1d["jet_cef"+tag]->Fill((*jet_cef)[ij], w);
+  histo_->hist1d["jet_nef"+tag]->Fill((*jet_nef)[ij], w);
+  histo_->hist1d["jet_chf"+tag]->Fill((*jet_chf)[ij], w);
+  histo_->hist1d["jet_nhf"+tag]->Fill((*jet_nhf)[ij], w);
+  histo_->hist1d["jet_phf"+tag]->Fill((*jet_phf)[ij], w);
 
   // Calculated quantities
   histo_->hist1d["jet_nTrack"+tag]->Fill(nTrack, w);
