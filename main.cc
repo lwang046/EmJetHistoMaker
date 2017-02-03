@@ -101,14 +101,16 @@ int main(int argc, char *argv[])
       //   for ( unsigned ifile=0; ifile < sample.files.size(); ifile++ ) iinputFileIndex.push_back(ifile);
       // }
       long eventCount = 0;
-      for (int ifile : iinputFileIndex) {
-        if (ifile >= sample.files.size()) break;
-        std::cout << "--------------------------------\n";
-        std::cout << "Calculating total event count: " << ifile << std::endl;
-        EmJetHistoMaker hm(sample.files[ifile]);
-        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+"-"+ilabel+"-"+std::to_string(ifile)+".root");
-        hm.SetOptions(Sample::SIGNAL, sample.isData, 1., eventCount, true, false);
-        eventCount += hm.GetEventCount("eventCountPreTrigger");
+      if (!sample.isData) {
+        for (int ifile : iinputFileIndex) {
+          if (ifile >= sample.files.size()) break;
+          std::cout << "--------------------------------\n";
+          std::cout << "Calculating total event count: " << ifile << std::endl;
+          EmJetHistoMaker hm(sample.files[ifile]);
+          hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+"-"+ilabel+"-"+std::to_string(ifile)+".root");
+          hm.SetOptions(Sample::SIGNAL, sample.isData, 1., eventCount, true, false);
+          eventCount += hm.GetEventCount("eventCountPreTrigger");
+        }
       }
       for (int ifile : iinputFileIndex) {
         if (ifile >= sample.files.size()) break;
@@ -121,11 +123,13 @@ int main(int argc, char *argv[])
         std::cout << "Opened output file" << std::endl;
         // int status = hm.SetTree(sample.files[ifile]);
         // hm.SetOptions(Sample::WJET, true, 1., 1., false, false);
-        hm.SetOptions(Sample::SIGNAL, sample.isData, 1., eventCount, true, false);
+        hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
         // if (status==0) hm.LoopOverCurrentTree();
         // else { std::cout << "Error! Skipping file\n"; }
         hm.LoopOverCurrentTree();
-        hm.GetEventCountHistAndClone("eventCountPreTrigger");
+        if (!sample.isData) {
+          hm.GetEventCountHistAndClone("eventCountPreTrigger");
+        }
         hm.WriteHistograms();
       }
       std::cout << "--------------------------------\n";

@@ -69,6 +69,8 @@ class EmJetHistoMaker : public HistoMakerBase
   bool pileupOnly_;
   string file_; // Path to current input file
   unique_ptr<reweight::LumiReWeighting> LumiWeights_;
+  // Calculated variables
+  double event_ht_;
 };
 
 EmJetHistoMaker::EmJetHistoMaker()
@@ -271,6 +273,13 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
 
   double w = CalculateEventWeight(eventnumber);
 
+  // Calculate ht
+  double ht = 0;
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    ht += (*jet_pt)[ij];
+  }
+  event_ht_ = ht;
+
   int nJet_egammacut = 0, nJet_emerging = 0, nJet_ipcut = 0;
   int nEmerging = 0;
   // Jet loop
@@ -292,16 +301,22 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
         }
       }
     }
-    histo_->hist1d[string("jet_N")+"__JTegammacut"+tag]->Fill(nJet_egammacut, w);
-    // histo_->hist1d[string("nJet")+"__JTegammacut"+tag]->Fill(nEmerging, w);
-    // histo_->hist1d[string("nEmerging")+tag]->Fill(nEmerging, w);
-    histo_->hist1d[string("jet_N")+"__JTemerging"+tag]->Fill(nEmerging, w);
-    histo_->hist1d[string("jet_N")+"__JTipcut"+tag]->Fill(nJet_ipcut, w);
     // Jet cut 1
     // FillJetHistograms(eventnumber, "__JETCUT1");
     // Jet cut 2
     // FillJetHistograms(eventnumber, "__JETCUT2");
   }
+
+  // Existing quantities (in ntuple)
+  histo_->hist1d["nVtx"]->Fill(nVtx, w);
+
+  // Calculated quantities
+  histo_->hist1d["ht"]->Fill(ht, w);
+  histo_->hist1d[string("jet_N")+"__JTegammacut"+tag]->Fill(nJet_egammacut, w);
+  // histo_->hist1d[string("nJet")+"__JTegammacut"+tag]->Fill(nEmerging, w);
+  // histo_->hist1d[string("nEmerging")+tag]->Fill(nEmerging, w);
+  histo_->hist1d[string("jet_N")+"__JTemerging"+tag]->Fill(nEmerging, w);
+  histo_->hist1d[string("jet_N")+"__JTipcut"+tag]->Fill(nJet_ipcut, w);
 }
 
 void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
@@ -423,7 +438,9 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   histo_->hist1d["jet_missInnerHit_frac"+tag]->Fill(missInnerHit_frac, w);
 
   // 2D histos
-  histo_->hist2d[string("jet_disp_frac")+"_VS_"+"jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], disp_frac, w);
+  histo_->hist2d[string()+"jet_disp_frac"+"_VS_"+"jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], disp_frac, w);
+  histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"ht"+tag]->Fill(event_ht_, (*jet_alphaMax)[ij], w);
+  histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"nVtx"+tag]->Fill(nVtx, (*jet_alphaMax)[ij], w);
 }
 
 void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, string tag)
