@@ -56,6 +56,7 @@ def user_define_histos():
     name = 'deltaPt'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
     name = 'vertex_Lxy'                ; histo_dict[name] = Histo1F(name , vbins[name]             )
     name = 'vertex_mass'               ; histo_dict[name] = Histo1F(name , vbins[name]             )
+    name = 'jet_N'                     ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'jet_pt'                    ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
     name = 'jet_eta'                   ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'jet_phi'                   ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
@@ -122,7 +123,7 @@ def user_define_histos():
     # Track plot variations
     histo_clone_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
-        if name[:6]=='track_':
+        if name[:6]=='track_' or name=='nTrack':
             histo_clone = clone_object(histo, postfix='TKprompt')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='TKdisplaced')
@@ -132,10 +133,12 @@ def user_define_histos():
     # Jet plot variations
     histo_clone_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
-        if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_':
+        if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_' or name=='nJet':
             histo_clone = clone_object(histo, postfix='JTegammacut')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='JTemerging')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='JTipcut')
             histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
 

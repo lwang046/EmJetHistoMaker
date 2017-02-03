@@ -37,6 +37,7 @@ class EmJetHistoMaker : public HistoMakerBase
 {
  public:
   EmJetHistoMaker();
+  EmJetHistoMaker(string ifilename);
   ~EmJetHistoMaker() {};
   int TRACKSOURCE;
   int VERTEXSOURCE;
@@ -48,26 +49,50 @@ class EmJetHistoMaker : public HistoMakerBase
   void FillPileupHistograms (long eventnumber, string tag);
   void PrintEvent (long eventnumber, string comment);
   int SetTree(string ifilename);
-  void SetOptions(Sample sample=Sample::SIGNAL, bool isData=false, double xsec=1.0, double efficiency=1.0, bool isSignal=false, bool pileupOnly=false);
+  int SetTree();
+  int GetEventCountHistAndClone(string ihistname);
+  int GetEventCount(string ihistname);
+  void SetOptions(Sample sample=Sample::SIGNAL, bool isData=false, double xsec=1.0, long nevent=1, bool isSignal=false, bool pileupOnly=false);
  private:
   double CalculateEventWeight(long eventnumber);
   bool SelectJet(int jet_index);
   bool SelectJet_egammacut(int jet_index);
-  bool SelectJet_almostemerging(int jet_index);
+  bool SelectJet_alphaMax(int jet_index);
   bool SelectJet_ipCut(int jet_index);
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
   Sample sample_;
   bool isData_;
   double xsec_;
-  double efficiency_;
+  double nevent_;
   bool isSignal_;
   bool pileupOnly_;
+  string file_; // Path to current input file
   unique_ptr<reweight::LumiReWeighting> LumiWeights_;
 };
 
 EmJetHistoMaker::EmJetHistoMaker()
 {
+  SetMaxEntries(-1);
+  std::cout << "EmJetHistoMaker::EmJetHistoMaker()" << std::endl;
+  TRACKSOURCE = 0;
+  // Initialize lumi reweighting utility
+  {
+    std::string mcFile   = "~/www/2016-03-23/pileup_mc_2015_25ns_Startup_PoissonOOTPU.root";
+    std::string dataFile = "~/www/2016-03-21/pileup-DataSkim-20160302.root";
+    std::string mcHist   = "nTrueInt";
+    std::string dataHist = "pileup";
+    LumiWeights_ = unique_ptr<reweight::LumiReWeighting>(new reweight::LumiReWeighting(mcFile, dataFile, mcHist, dataHist));
+  }
+}
+
+EmJetHistoMaker::EmJetHistoMaker(string ifilename)
+{
+  SetMaxEntries(-1);
+  std::cout << "EmJetHistoMaker::EmJetHistoMaker(\"" << ifilename << "\")" << std::endl;
+  file_ = ifilename;
+  int status = SetTree(ifilename);
+  if (!status==0) std::cerr << "Error when opening file: " << ifilename << std::endl;
   TRACKSOURCE = 0;
   // Initialize lumi reweighting utility
   {
@@ -92,6 +117,61 @@ int EmJetHistoMaker::SetTree(std::string filename)
   // tree_->Print();
   Init(tree_);
   return 0; // No error
+}
+
+int EmJetHistoMaker::SetTree()
+{
+  string filename = file_;
+  TFile *f = new TFile(filename.c_str());
+  // File read error
+  if (f->IsZombie()) {
+    std::cout << "File read error for file: " << filename << std::endl;
+    return 1;
+  }
+  TDirectory * dir = (TDirectory*)f->Get((filename+":/emJetAnalyzer").c_str());
+  dir->GetObject("emJetTree",tree_);
+  // tree_->Print();
+  Init(tree_);
+  return 0; // No error
+}
+
+int EmJetHistoMaker::GetEventCountHistAndClone(string ihistname)
+{
+  if (isData_) {
+    std::cerr << "Error: Attempting to get event count histogram for data\n";
+    return -1;
+  }
+  string filename = file_;
+  TFile *f = new TFile(filename.c_str());
+  // File read error
+  if (f->IsZombie()) {
+    std::cout << "File read error for file: " << filename << std::endl;
+    return 1;
+  }
+  TDirectory * dir = (TDirectory*)f->Get((filename+":/"+ihistname).c_str());
+  TH1F* eventcounthist = (TH1F*)dir->Get(ihistname.c_str())->Clone();
+  eventcounthist->SetDirectory(ofile_);
+  eventcounthist->Write();
+  return 0; // No error
+}
+
+int EmJetHistoMaker::GetEventCount(string ihistname)
+{
+  if (isData_) {
+    std::cerr << "Error: Attempting to get event count histogram for data\n";
+    return -1;
+  }
+  string filename = file_;
+  TFile *f = new TFile(filename.c_str());
+  // File read error
+  if (f->IsZombie()) {
+    std::cout << "File read error for file: " << filename << std::endl;
+    return -1;
+  }
+  TDirectory * dir = (TDirectory*)f->Get((filename+":/"+ihistname).c_str());
+  TH1F* eventcounthist = (TH1F*)dir->Get(ihistname.c_str());
+  if (eventcounthist) return eventcounthist->Integral();
+  return -1;
 }
 
 void EmJetHistoMaker::InitHistograms()
@@ -121,8 +201,8 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   pt_cuts[3] = (*jet_pt)[3] > 100 && pt_cuts[3-1] ;
   for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
     if (pt_cuts[3]) {
-      if ( SelectJet_egammacut(ij) && SelectJet_almostemerging(ij) ) nAlmostEmerging++;
-      if ( SelectJet_egammacut(ij) && SelectJet_almostemerging(ij) && SelectJet_ipCut(ij) ) nEmerging++;
+      if ( SelectJet_egammacut(ij) && SelectJet_alphaMax(ij) ) nAlmostEmerging++;
+      if ( SelectJet_egammacut(ij) && SelectJet_alphaMax(ij) && SelectJet_ipCut(ij) ) nEmerging++;
     }
   }
   {
@@ -142,13 +222,13 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
       if ( cuts[ic] ) histo_->hist1d["cutflow2"]->Fill(ic, w);
     }
     if (cuts[8]) {
-      FillEventHistograms(eventnumber, "/EVTpvpass");
+      FillEventHistograms(eventnumber, "__EVTpvpass");
     }
   }
   // Event cut 1
-  // FillEventHistograms(eventnumber, "/EVTCUT1");
+  // FillEventHistograms(eventnumber, "__EVTCUT1");
   // Event cut 2
-  // FillEventHistograms(eventnumber, "/EVTCUT2");
+  // FillEventHistograms(eventnumber, "__EVTCUT2");
 
   // Fill cut flow histogram for comparison with Sarah's cut flow
   {
@@ -191,25 +271,36 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
 
   double w = CalculateEventWeight(eventnumber);
 
+  int nJet_egammacut = 0, nJet_emerging = 0, nJet_ipcut = 0;
   int nEmerging = 0;
   // Jet loop
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
     FillJetHistograms(eventnumber, ij, ""+tag);
     if ( (*jet_nDarkPions)[ij] > 0 ) {
-      FillJetHistograms(eventnumber, ij, "/sig"+tag);
+      FillJetHistograms(eventnumber, ij, "__sig"+tag);
     }
     if (SelectJet_egammacut(ij)) {
-      FillJetHistograms(eventnumber, ij, "/JTegammacut"+tag);
-      if (SelectJet_almostemerging(ij)) {
-        FillJetHistograms(eventnumber, ij, "/JTemerging"+tag);
+      FillJetHistograms(eventnumber, ij, "__JTegammacut"+tag);
+      nJet_egammacut++;
+      if (SelectJet_alphaMax(ij)) {
+        FillJetHistograms(eventnumber, ij, "__JTemerging"+tag);
+        nJet_emerging++;
         nEmerging++;
+        if (SelectJet_ipCut(ij)) {
+          FillJetHistograms(eventnumber, ij, "__JTipcut"+tag);
+          nJet_ipcut++;
+        }
       }
     }
-    histo_->hist1d["nEmerging"]->Fill(nEmerging, w);
+    histo_->hist1d[string("jet_N")+"__JTegammacut"+tag]->Fill(nJet_egammacut, w);
+    // histo_->hist1d[string("nJet")+"__JTegammacut"+tag]->Fill(nEmerging, w);
+    // histo_->hist1d[string("nEmerging")+tag]->Fill(nEmerging, w);
+    histo_->hist1d[string("jet_N")+"__JTemerging"+tag]->Fill(nEmerging, w);
+    histo_->hist1d[string("jet_N")+"__JTipcut"+tag]->Fill(nJet_ipcut, w);
     // Jet cut 1
-    // FillJetHistograms(eventnumber, "/JETCUT1");
+    // FillJetHistograms(eventnumber, "__JETCUT1");
     // Jet cut 2
-    // FillJetHistograms(eventnumber, "/JETCUT2");
+    // FillJetHistograms(eventnumber, "__JETCUT2");
   }
 }
 
@@ -229,10 +320,10 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
         vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
         FillTrackHistograms(eventnumber, ij, itk, tag);
         if ( (*track_ipXY)[ij][itk] < ipXYcut ) {
-          FillTrackHistograms(eventnumber, ij, itk, "/TKprompt"+tag);
+          FillTrackHistograms(eventnumber, ij, itk, "__TKprompt"+tag);
         }
         else {
-          FillTrackHistograms(eventnumber, ij, itk, "/TKdisplaced"+tag);
+          FillTrackHistograms(eventnumber, ij, itk, "__TKdisplaced"+tag);
         }
       }
     }
@@ -366,7 +457,8 @@ double EmJetHistoMaker::CalculateEventWeight(long eventnumber)
   if (isData_) weight = 1.0;
   else {
     weight = 1.0;
-    double generator_weight = xsec_*efficiency_/nentries_;
+    double generator_weight = xsec_/nevent_;
+    // double generator_weight = xsec_;
     weight *= generator_weight;
     // double pileup_lumi_weight = LumiWeights_->weight(nTrueInt);
     // weight *= pileup_lumi_weight;
@@ -413,7 +505,7 @@ bool EmJetHistoMaker::SelectJet_egammacut(int ij)
   return result;
 }
 
-bool EmJetHistoMaker::SelectJet_almostemerging(int ij)
+bool EmJetHistoMaker::SelectJet_alphaMax(int ij)
 {
   bool result = true;
   bool cut_alphaMax = (*jet_alphaMax)[ij] < 0.04  ; result = result && cut_alphaMax ;
@@ -430,6 +522,7 @@ bool EmJetHistoMaker::SelectJet_ipCut(int ij)
     }
   }
   bool ipCut = maxIp > 0.4;
+  result = ipCut;
   return result;
 }
 
@@ -442,13 +535,12 @@ void EmJetHistoMaker::PrintEvent (long eventnumber, string comment)
 }
 
 void
-EmJetHistoMaker::SetOptions(Sample sample, bool isData, double xsec, double efficiency, bool isSignal, bool pileupOnly)
+EmJetHistoMaker::SetOptions(Sample sample, bool isData, double xsec, long nevent, bool isSignal, bool pileupOnly)
 {
   sample_ = sample;
   isData_ = isData;
   xsec_ = xsec;
-  efficiency_ = efficiency;
+  nevent_ = nevent;
   isSignal_ = isSignal;
   pileupOnly_ = pileupOnly;
 }
-

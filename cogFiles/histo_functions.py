@@ -45,7 +45,7 @@ def histo_combine1Dto2D(histoX, histoY):
             binsY = histoY.binsX, )
     return newhisto
 
-def clone_object(object, prefix='', postfix='', separator='/'):
+def clone_object(object, prefix='', postfix='', separator='__'):
     """Clone input namedtuple object that has attribute \"name\", by adding prefix and postfix to object.name.
     Separator is the character used to separate the original name from the prefix/suffix."""
     if (not prefix) and (not postfix):

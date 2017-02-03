@@ -58,6 +58,7 @@ ReadSamplesFromConfigFile(string configFileName, vector<EmJetSample>& samples)
       EmJetSample sample;
       FieldsToSample(fields, sample);
       samples.push_back(sample);
+      PrintSample(sample);
     }
   }
 }
@@ -85,7 +86,7 @@ LineToFields(string iline, vector<string>& result)
 
   // std::cout << "iline: " << iline << std::endl;
   removeSpaces(iline); // Remove spaces
-  std::cout << "iline after space removal: " << iline << std::endl;
+  // std::cout << "iline after space removal: " << iline << std::endl;
   std::stringstream iss(iline);
   string field;
   // Read result separated by comma
@@ -105,6 +106,7 @@ FieldsToSample(const vector<string>& ifields, EmJetSample& sample)
 {
   sample.group = ifields[0];
   sample.name = ifields[1];
+  OUTPUT(sample.name);
   sample.type = ifields[2];
 
   if      (ifields[3]=="MC"                       ) sample.isData = false;

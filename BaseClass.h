@@ -15,6 +15,7 @@
 // Header file for the classes stored in the TTree if any.
 #include <vector>
 #include <vector>
+#include <iostream>
 
 using std::vector;
 
@@ -187,18 +188,6 @@ public :
 #ifdef BaseClass_cxx
 BaseClass::BaseClass(TTree *tree) : fChain(0) 
 {
-// if parameter tree is not specified (or zero), connect the file
-// used to generate this class and read the Tree.
-   if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root");
-      if (!f || !f->IsOpen()) {
-         f = new TFile("/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root");
-      }
-      TDirectory * dir = (TDirectory*)f->Get("/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root:/emJetAnalyzer");
-      dir->GetObject("emJetTree",tree);
-
-   }
-   Init(tree);
 }
 
 BaseClass::~BaseClass()
