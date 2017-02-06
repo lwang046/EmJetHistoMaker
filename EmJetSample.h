@@ -106,7 +106,7 @@ FieldsToSample(const vector<string>& ifields, EmJetSample& sample)
 {
   sample.group = ifields[0];
   sample.name = ifields[1];
-  OUTPUT(sample.name);
+  // OUTPUT(sample.name);
   sample.type = ifields[2];
 
   if      (ifields[3]=="MC"                       ) sample.isData = false;

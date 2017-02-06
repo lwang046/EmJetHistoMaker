@@ -1,6 +1,6 @@
 #include "EmJetHistoMaker.h"
 #include "EmJetFiles.h"
-#include "EmJetSample.h"
+// #include "EmJetSample.h"
 #include "tclap/CmdLine.h"
 
 #include <iostream>
@@ -36,11 +36,15 @@ int main(int argc, char *argv[])
 	ValueArg<string> sampleArg("s","sample","Name of sample to run over. Unspecified: Run over all.",false,"","string");
 	cmd.add( sampleArg );
 
-	// ValueArg<int> numberOfFilesArg("n","number","Maximum number of files per sample to run over. -1: Run over all.",false,-1,"int");
-	// cmd.add( numberOfFilesArg );
+	ValueArg<int> numberOfFilesArg("n","number","Number of files per run to process.",false,true,"int");
+	cmd.add( numberOfFilesArg );
 
-	MultiArg<int> inputFileIndexArg("i","input","Index of files to run over for specified sample. Unspecified: Run over all.",false,"int");
+	MultiArg<int> inputFileIndexArg("i","input","Index of files to run over for specified sample..",false,"int");
 	cmd.add( inputFileIndexArg );
+
+  UnlabeledValueArg<int>  runArg( "run", "Run number. Use in combination with \"-n\" flag to parallelize. E.g. For arguments -n 10 5, the program runs over files indexed 10*5=50 to 10*5+10-1=59.",
+                                  true, 0, "int"  );
+  cmd.add( runArg );
 
 	// Define switches and add it to the command line.
 	// SwitchArg pileupOnlySwitch("p","pileup","Only output pileup histograms", false);
@@ -56,8 +60,9 @@ int main(int argc, char *argv[])
   std::cout << "Output directory set to : " << ioutputDir << std::endl;
 	string ilabel     = labelArg.getValue();
 	string isample    = sampleArg.getValue(); // Run over all if ""
-  // int inumberOfFiles = numberOfFilesArg.getValue(); // Run over all if -1
+  int inumberOfFiles = numberOfFilesArg.getValue(); // Run over all if -1
   vector<int> iinputFileIndex = inputFileIndexArg.getValue(); // Run over all if empty
+  int irun = runArg.getValue();
 	// bool ipileupOnly = pileupOnlySwitch.getValue();
 
   // // Calculate parameters from command line arguments
@@ -93,6 +98,80 @@ int main(int argc, char *argv[])
       std::cout << "--------------------------------\n";
       std::cout << "--------------------------------\n";
       std::cout << "Running over sample: " << sample.name << std::endl;
+      string sampledir = ioutputDir + "-" + ilabel + "/" + sample.name;
+      std::cout << "Creating directory: " << sampledir << std::endl;
+      string mkdir_command = "mkdir -p " + sampledir;
+      system(mkdir_command.c_str());
+
+      // Calculate total number of events in sample
+      long eventCount = 0;
+      if (!sample.isData) {
+        std::cout << "--------------------------------\n";
+        for (unsigned ifile=0; ifile < sample.files.size(); ifile++) {
+          std::cout << "Calculating event count in file: " << ifile << std::endl;
+          string filename = sample.files[ifile];
+          string hname = "eventCountPreTrigger";
+          TFile *f = new TFile(filename.c_str());
+          TDirectory * dir = (TDirectory*)f->Get((filename+":/"+hname).c_str());
+          if (dir) {
+            TH1F* eventcounthist = (TH1F*)dir->Get(hname.c_str());
+            eventCount += eventcounthist->Integral();
+          }
+        }
+      }
+      std::cout << "--------------------------------\n";
+      std::cout << "Total event count in sample: " << eventCount << std::endl;
+
+      EmJetSample sample_filtered = sample; // Copy of sample with filtered files
+      sample_filtered.files.clear();
+      OUTPUT(irun);
+      OUTPUT(inumberOfFiles);
+      unsigned firstfileindex = irun * inumberOfFiles;
+      unsigned lastfileindex  = irun * inumberOfFiles + inumberOfFiles - 1;
+      for (unsigned ifile=0; ifile < sample.files.size(); ifile++) {
+        if (ifile >= firstfileindex && ifile <= lastfileindex) {
+          std::cout << "Adding file to list of files to be processed: " << ifile << std::endl;
+          sample_filtered.files.push_back(sample.files[ifile]);
+        }
+      }
+
+      // Process files if there are any to be processed
+      if (sample_filtered.files.size()) {
+        EmJetHistoMaker hm(sample_filtered);
+        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+"-"+ilabel+"-"+std::to_string(irun)+".root");
+        hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
+        hm.LoopOverCurrentTree();
+        hm.WriteHistograms();
+      }
+    }
+    std::cout << "--------------------------------\n";
+  }
+
+
+  // Main body of program
+  int runOverSpecifiedIndividualFiles = 0;
+  if (runOverSpecifiedIndividualFiles)
+  {
+    vector<EmJetSample> ejsamples, ejsamples_singlesample;
+    ReadSamplesFromConfigFile(iconfig, ejsamples);
+    std::cout << "Number of samples read: " << ejsamples.size() << std::endl;
+    // If input sample is specified, only run over the specified sample
+    if (isample != "") {
+      std::cout << "Sample specified in command line: " << isample << std::endl;
+      for (unsigned i=0; i<ejsamples.size(); i++) {
+        auto sample=ejsamples[i];
+        if (sample.name==isample) {
+          std::cout << "Found matching sample in config file " << std::endl;
+          ejsamples_singlesample.push_back(sample);
+          PrintSample(sample);
+        }
+      }
+      ejsamples = ejsamples_singlesample;
+    } // ejsamples now contains all the samples to run over
+    for (EmJetSample sample : ejsamples) {
+      std::cout << "--------------------------------\n";
+      std::cout << "--------------------------------\n";
+      std::cout << "Running over sample: " << sample.name << std::endl;
       string sampledir = ioutputDir + "/" + sample.name + "-" + ilabel;
       std::cout << "Creating directory: " << sampledir << std::endl;
       string mkdir_command = "mkdir -p " + sampledir;
@@ -103,7 +182,7 @@ int main(int argc, char *argv[])
       long eventCount = 0;
       if (!sample.isData) {
         for (int ifile : iinputFileIndex) {
-          if (ifile >= sample.files.size()) break;
+          if (unsigned(ifile) >= sample.files.size()) break;
           std::cout << "--------------------------------\n";
           std::cout << "Calculating total event count: " << ifile << std::endl;
           EmJetHistoMaker hm(sample.files[ifile]);
@@ -113,7 +192,7 @@ int main(int argc, char *argv[])
         }
       }
       for (int ifile : iinputFileIndex) {
-        if (ifile >= sample.files.size()) break;
+        if (unsigned(ifile) >= sample.files.size()) break;
         std::cout << "--------------------------------\n";
         std::cout << "Running over file: " << ifile << std::endl;
         EmJetHistoMaker hm(sample.files[ifile]);

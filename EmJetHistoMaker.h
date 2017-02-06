@@ -1,5 +1,6 @@
 #include "HistoMakerBase.h"
 #include "EmJetHistos.h"
+#include "EmJetSample.h"
 #include "LumiReWeightingStandAlone.h"
 
 #include <TROOT.h>
@@ -29,6 +30,7 @@ using std::unique_ptr;
 const int debug = 0;
 
 class EmJetHistos;
+class EmJetSample;
 typedef EmJetHistos Histos;
 const int nTrackSort=50;
 enum class Sample {SIGNAL, QCD, WJET};
@@ -38,6 +40,7 @@ class EmJetHistoMaker : public HistoMakerBase
  public:
   EmJetHistoMaker();
   EmJetHistoMaker(string ifilename);
+  EmJetHistoMaker(EmJetSample isample);
   ~EmJetHistoMaker() {};
   int TRACKSOURCE;
   int VERTEXSOURCE;
@@ -53,6 +56,7 @@ class EmJetHistoMaker : public HistoMakerBase
   int GetEventCountHistAndClone(string ihistname);
   int GetEventCount(string ihistname);
   void SetOptions(Sample sample=Sample::SIGNAL, bool isData=false, double xsec=1.0, long nevent=1, bool isSignal=false, bool pileupOnly=false);
+  void InitLumiReweighting();
  private:
   double CalculateEventWeight(long eventnumber);
   bool SelectJet(int jet_index);
@@ -78,14 +82,7 @@ EmJetHistoMaker::EmJetHistoMaker()
   SetMaxEntries(-1);
   std::cout << "EmJetHistoMaker::EmJetHistoMaker()" << std::endl;
   TRACKSOURCE = 0;
-  // Initialize lumi reweighting utility
-  {
-    std::string mcFile   = "~/www/2016-03-23/pileup_mc_2015_25ns_Startup_PoissonOOTPU.root";
-    std::string dataFile = "~/www/2016-03-21/pileup-DataSkim-20160302.root";
-    std::string mcHist   = "nTrueInt";
-    std::string dataHist = "pileup";
-    LumiWeights_ = unique_ptr<reweight::LumiReWeighting>(new reweight::LumiReWeighting(mcFile, dataFile, mcHist, dataHist));
-  }
+  InitLumiReweighting();
 }
 
 EmJetHistoMaker::EmJetHistoMaker(string ifilename)
@@ -96,14 +93,30 @@ EmJetHistoMaker::EmJetHistoMaker(string ifilename)
   int status = SetTree(ifilename);
   if (!status==0) std::cerr << "Error when opening file: " << ifilename << std::endl;
   TRACKSOURCE = 0;
-  // Initialize lumi reweighting utility
-  {
-    std::string mcFile   = "~/www/2016-03-23/pileup_mc_2015_25ns_Startup_PoissonOOTPU.root";
-    std::string dataFile = "~/www/2016-03-21/pileup-DataSkim-20160302.root";
-    std::string mcHist   = "nTrueInt";
-    std::string dataHist = "pileup";
-    LumiWeights_ = unique_ptr<reweight::LumiReWeighting>(new reweight::LumiReWeighting(mcFile, dataFile, mcHist, dataHist));
+  InitLumiReweighting();
+}
+
+EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
+{
+  SetMaxEntries(-1);
+  std::cout << "EmJetHistoMaker::EmJetHistoMaker(" << isample.name << ")" << std::endl;
+  TChain* chain = new TChain("emJetAnalyzer/emJetTree");
+  for (string file : isample.files) {
+    OUTPUT(file);
+    chain->Add(file.c_str(), -1); // -1: the file is connected and the tree header read in memory to get the number of entries.
   }
+  tree_ = chain;
+  Init(tree_);
+}
+
+void EmJetHistoMaker::InitLumiReweighting()
+{
+  // Initialize lumi reweighting utility
+  std::string mcFile   = "~/www/2016-03-23/pileup_mc_2015_25ns_Startup_PoissonOOTPU.root";
+  std::string dataFile = "~/www/2016-03-21/pileup-DataSkim-20160302.root";
+  std::string mcHist   = "nTrueInt";
+  std::string dataHist = "pileup";
+  LumiWeights_ = unique_ptr<reweight::LumiReWeighting>(new reweight::LumiReWeighting(mcFile, dataFile, mcHist, dataHist));
 }
 
 int EmJetHistoMaker::SetTree(std::string filename)
