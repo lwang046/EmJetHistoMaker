@@ -64,6 +64,7 @@ def user_define_histos():
     name = 'jet_phi'                   ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'jet_nTrack'                ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
     name = 'jet_medianIP'              ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
+    name = 'jet_maxIP'                 ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'jet_nTrackPostCut'         ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
     name = 'jet_medianIPPostCut'       ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'jet_medianLogIpSig'        ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
@@ -120,6 +121,8 @@ def user_define_histos():
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_medLogIpSig'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_prompt_frac'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_disp_frac'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['jet_pt'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['jet_pt'], histo_dict['jet_disp_frac'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['nVtx'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['ht'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
     histo_dict.update(histo_2d_dict)
@@ -140,7 +143,7 @@ def user_define_histos():
         if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_' or name=='nJet':
             histo_clone = clone_object(histo, postfix='JTegammacut')
             histo_clone_dict[histo_clone.name] = histo_clone
-            histo_clone = clone_object(histo, postfix='JTemerging')
+            histo_clone = clone_object(histo, postfix='JTalphaMax')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='JTipcut')
             histo_clone_dict[histo_clone.name] = histo_clone
@@ -159,6 +162,8 @@ def user_define_histos():
     for name, histo in histo_dict.iteritems():
         if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_':
             histo_clone = clone_object(histo, postfix='EVTpvpass')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='EVTkinematic')
             histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
 

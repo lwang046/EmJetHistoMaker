@@ -1,0 +1,10 @@
+# sample group , sample name      , sample Type , MC/DATA , isSignal , xsec[fb] , input file
+WJetMC         , WJetMC           , WJet        , MC      , false    ,        1 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/WJetMC_eos.txt
+QCD            , QCD_HT500to700   , QCD         , MC      , false    , 29370000 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/QCD_HT500to700.txt
+QCD            , QCD_HT700to1000  , QCD         , MC      , false    ,  6524000 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/QCD_HT700to1000.txt
+QCD            , QCD_HT1000to1500 , QCD         , MC      , false    ,  1064000 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/QCD_HT1000to1500.txt
+QCD            , QCD_HT1500to2000 , QCD         , MC      , false    ,   121500 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/QCD_HT1500to2000.txt
+QCD            , QCD_HT2000toInf  , QCD         , MC      , false    ,    25450 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/QCD_HT2000toInf.txt
+ModelA         , ModelA           , SIGNAL      , MC      , true     , 18.45    , /eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20161012-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20161012/161018_065904/ntuple_merged_ModelA.root 
+ModelB         , ModelB           , SIGNAL      , MC      , true     , 18.45    , /eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20161012-v0/ModelB/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20161012/161018_065917/ntuple_merged_ModelB.root
+WJetSkim       , WJetSkimMuon     , WJet        , DATA    , false    ,        1 , /afs/cern.ch/user/y/yoshin/workspace/emjet/looper/inputs/WJetSkimMuon_eos.txt

@@ -28,7 +28,7 @@ for s in samples_to_hadd:
     print files_to_hadd[:5]
     # command = '$EMJETHISTOMAKERDIR/haddnorm/haddnorm eventCountPreTrigger %s %s' % (ofilepath, ' '.join(files_to_hadd[:2]))
     if use_ahadd:
-        command = 'ahadd.py %s %s' % (ofilepath, ' '.join(files_to_hadd))
+        command = 'ahadd.py -f %s %s' % (ofilepath, ' '.join(files_to_hadd))
     else:
         command = 'hadd %s %s' % (ofilepath, ' '.join(files_to_hadd))
     subprocess.call([command], shell=True)
