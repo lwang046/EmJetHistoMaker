@@ -207,7 +207,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   if (pileupOnly_) return;
 
   FillEventHistograms(eventnumber, "");
-  int nEgamma = 0;
+  int nBasic = 0;
   int nAlphaMax = 0;
   int nEmerging = 0;
   // bool pt_cuts[4];
@@ -217,7 +217,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   // pt_cuts[3] = (*jet_pt)[3] > 100 && pt_cuts[3-1] ;
   for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
     if (ij>3) break;
-    if ( SelectJet_basic(ij) ) nEgamma++;
+    if ( SelectJet_basic(ij) ) nBasic++;
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) ) nAlphaMax++;
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) && SelectJet_ipCut(ij) ) nEmerging++;
   }
@@ -226,7 +226,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     const int nCut = 9;
     bool cuts[nCut]; string labels[nCut];
     cuts[0] = true                            ; labels[0]=("nocut");
-    cuts[1] = cuts[1-1] && nEgamma>=4         ; labels[1]=("nEgamma>=4        ");
+    cuts[1] = cuts[1-1] && nBasic>=4          ; labels[1]=("nBasic>=4         ");
     cuts[2] = cuts[2-1] && ht4 > 1000         ; labels[2]=("ht4 > 1000        ");
     cuts[3] = cuts[3-1] && (*jet_pt)[0] > 400 ; labels[3]=("(*jet_pt)[0] > 400");
     cuts[4] = cuts[4-1] && (*jet_pt)[1] > 200 ; labels[4]=("(*jet_pt)[1] > 200");
@@ -235,7 +235,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     cuts[7] = cuts[7-1] && nAlphaMax < 4      ; labels[7]=("nAlphaMax < 4     ");
     cuts[8] = cuts[8-1] && nEmerging >= 2     ; labels[8]=("nEmerging >= 2    ");
     for (int ic = 0; ic < nCut; ic ++) {
-      if ( cuts[ic] ) histo_->hist1d["cutflow2"]->Fill(labels[ic].c_str(), w);
+      if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), w);
     }
     if (cuts[6]) {
       FillEventHistograms(eventnumber, "__EVTkinematic");
@@ -278,7 +278,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     cuts[7] = cuts[7-1] && nJetPassingCut >= 1 ;
     cuts[8] = cuts[8-1] && nJetPassingCut >= 2 ;
     for (int ic = 0; ic < nCut; ic ++) {
-      if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(ic, w);
+      // if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(ic, w);
     }
   }
 
@@ -564,9 +564,6 @@ bool EmJetHistoMaker::SelectJet_ipCut(int ij)
   result = ipCut;
   return result;
 }
-
-
-
 
 void EmJetHistoMaker::PrintEvent (long eventnumber, string comment)
 {
