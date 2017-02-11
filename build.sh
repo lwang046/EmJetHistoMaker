@@ -6,7 +6,7 @@ echo $STARTINGDIR
 # cd cogFiles
 PYTHONPATH=${PWD}/cogFiles
 echo "WARNING: Replacing EmJetHistos.h"
-cog.py -r ${STARTINGDIR}/EmJetHistos.h
+$HOME/.local/bin/cog.py -r ${STARTINGDIR}/EmJetHistos.h
 status=$?
 if [ $status -ne 0 ] # If previous command was not successful
 then
