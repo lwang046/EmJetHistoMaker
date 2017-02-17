@@ -22,7 +22,8 @@ queue = int(sys.argv[1])
 command = sys.argv[2]
 
 command_list = command.split()
-BASEDIR = "/afs/cern.ch/user/y/yoshin/work/condor_output"
+# BASEDIR = "/afs/cern.ch/user/y/yoshin/work/condor_output"
+BASEDIR = "/home/yhshin/data/condor_output"
 DATESTR = time.strftime("%Y-%m-%d")
 DIRECTORY = os.path.join(BASEDIR, DATESTR) # DIRECTORY = BASEDIR/YY-MM-DD
 if not os.path.exists(DIRECTORY):
@@ -34,6 +35,7 @@ kw_dict['ARGUMENTS']  = " ".join(command_list[1:])
 kw_dict['QUEUE']  = "%d" % queue
 kw_dict['DATE'] = time.strftime("%Y-%m-%d")
 
+# For lxplus or generic condor clusters
 jdl_template ="""
 universe = vanilla
 executable            = ${EXECUTABLE}
@@ -43,6 +45,18 @@ error                 = ${DIRECTORY}/condor_test.$(ClusterId).$(ProcId).err
 log                   = ${DIRECTORY}/condor_test.$(ClusterId).log
 send_credential        = True
 queue ${QUEUE}
+"""
+
+# For hepcms SL6
+jdl_template ="""
+Universe = vanilla
+Requirements = TARGET.FileSystemDomain == "privnet"
+Executable            = ${EXECUTABLE}
+Arguments             = ${ARGUMENTS} $(ProcId)
+Output                = ${DIRECTORY}/condor_test.$(ClusterId).$(ProcId).out
+Error                 = ${DIRECTORY}/condor_test.$(ClusterId).$(ProcId).err
+Log                   = ${DIRECTORY}/condor_test.$(ClusterId).log
+Queue ${QUEUE}
 """
 
 t = Template(jdl_template)

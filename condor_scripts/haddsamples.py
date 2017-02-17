@@ -7,12 +7,19 @@ import sys
 import os
 import subprocess
 
+
 use_ahadd=True
 
 def listdir_fullpath(d):
     return [os.path.join(d, f) for f in os.listdir(d)]
 
-dir_to_hadd = sys.argv[1]
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--force', action='store_true')
+parser.add_argument('directory')
+args = parser.parse_args()
+
+dir_to_hadd = args.directory
 
 samplepaths_to_hadd = listdir_fullpath(dir_to_hadd)
 samplepaths_to_hadd = [s for s in samplepaths_to_hadd if os.path.isdir(s)] # Only look at directories
@@ -27,10 +34,10 @@ for s in samples_to_hadd:
     print ofilepath
     print files_to_hadd[:5]
     # command = '$EMJETHISTOMAKERDIR/haddnorm/haddnorm eventCountPreTrigger %s %s' % (ofilepath, ' '.join(files_to_hadd[:2]))
-    if use_ahadd:
-        command = 'ahadd.py -f %s %s' % (ofilepath, ' '.join(files_to_hadd))
-    else:
-        command = 'hadd %s %s' % (ofilepath, ' '.join(files_to_hadd))
+    if use_ahadd: haddcommand = 'ahadd.py'
+    else        : haddcommand = 'hadd'
+    if args.force: haddcommand = haddcommand + ' -f'
+    command = '%s %s %s' % (haddcommand, ofilepath, ' '.join(files_to_hadd))
     subprocess.call([command], shell=True)
     # files_to_hadd_concat = " ".join(files_to_hadd)
     index+=1

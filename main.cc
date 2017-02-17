@@ -30,17 +30,17 @@ int main(int argc, char *argv[])
 	ValueArg<string> outputDirArg("d","directory","Output directory. Do NOT include trailing slash character",true,".","string");
 	cmd.add( outputDirArg );
 
-	ValueArg<string> labelArg("l","label","Additional optional label for output file",false,"default","string");
+	ValueArg<string> labelArg("l","label","Additional optional label for output file",false,"","string");
 	cmd.add( labelArg );
 
 	ValueArg<string> sampleArg("s","sample","Name of sample to run over. Unspecified: Run over all.",false,"","string");
 	cmd.add( sampleArg );
 
-	ValueArg<int> numberOfFilesArg("n","number","Number of files per run to process.",false,true,"int");
+	ValueArg<int> numberOfFilesArg("n","number","Number of files per run to process.",false,1,"int");
 	cmd.add( numberOfFilesArg );
 
-	MultiArg<int> inputFileIndexArg("i","input","Index of files to run over for specified sample..",false,"int");
-	cmd.add( inputFileIndexArg );
+	// MultiArg<int> inputFileIndexArg("i","input","Index of files to run over for specified sample..",false,"int");
+	// cmd.add( inputFileIndexArg );
 
   UnlabeledValueArg<int>  runArg( "run", "Run number. Use in combination with \"-n\" flag to parallelize. E.g. For arguments -n 10 5, the program runs over files indexed 10*5=50 to 10*5+10-1=59.",
                                   true, 0, "int"  );
@@ -59,9 +59,11 @@ int main(int argc, char *argv[])
 	string ioutputDir = outputDirArg.getValue();
   std::cout << "Output directory set to : " << ioutputDir << std::endl;
 	string ilabel     = labelArg.getValue();
+	string labelstring("");
+  if (ilabel!="") labelstring = string("-") + ilabel; // If label specified, set labelstring
 	string isample    = sampleArg.getValue(); // Run over all if ""
   int inumberOfFiles = numberOfFilesArg.getValue(); // Run over all if -1
-  vector<int> iinputFileIndex = inputFileIndexArg.getValue(); // Run over all if empty
+  // vector<int> iinputFileIndex = inputFileIndexArg.getValue(); // Run over all if empty
   int irun = runArg.getValue();
 	// bool ipileupOnly = pileupOnlySwitch.getValue();
 
@@ -98,7 +100,7 @@ int main(int argc, char *argv[])
       std::cout << "--------------------------------\n";
       std::cout << "--------------------------------\n";
       std::cout << "Running over sample: " << sample.name << std::endl;
-      string sampledir = ioutputDir + "-" + ilabel + "/" + sample.name;
+      string sampledir = ioutputDir + labelstring + "/" + sample.name;
       std::cout << "Creating directory: " << sampledir << std::endl;
       string mkdir_command = "mkdir -p " + sampledir;
       system(mkdir_command.c_str());
@@ -138,7 +140,7 @@ int main(int argc, char *argv[])
       // Process files if there are any to be processed
       if (sample_filtered.files.size()) {
         EmJetHistoMaker hm(sample_filtered);
-        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+"-"+ilabel+"-"+std::to_string(irun)+".root");
+        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+labelstring+"-"+std::to_string(irun)+".root");
         hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
         hm.LoopOverCurrentTree();
         hm.WriteHistograms();
@@ -148,6 +150,7 @@ int main(int argc, char *argv[])
   }
 
 
+  /*
   // Main body of program
   int runOverSpecifiedIndividualFiles = 0;
   if (runOverSpecifiedIndividualFiles)
@@ -172,7 +175,7 @@ int main(int argc, char *argv[])
       std::cout << "--------------------------------\n";
       std::cout << "--------------------------------\n";
       std::cout << "Running over sample: " << sample.name << std::endl;
-      string sampledir = ioutputDir + "/" + sample.name + "-" + ilabel;
+      string sampledir = ioutputDir + "/" + sample.name + labelstring;
       std::cout << "Creating directory: " << sampledir << std::endl;
       string mkdir_command = "mkdir -p " + sampledir;
       system(mkdir_command.c_str());
@@ -186,7 +189,7 @@ int main(int argc, char *argv[])
           std::cout << "--------------------------------\n";
           std::cout << "Calculating total event count: " << ifile << std::endl;
           EmJetHistoMaker hm(sample.files[ifile]);
-          hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+"-"+ilabel+"-"+std::to_string(ifile)+".root");
+          hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+labelstring+"-"+std::to_string(ifile)+".root");
           hm.SetOptions(Sample::SIGNAL, sample.isData, 1., eventCount, true, false);
           eventCount += hm.GetEventCount("eventCountPreTrigger");
         }
@@ -198,7 +201,7 @@ int main(int argc, char *argv[])
         EmJetHistoMaker hm(sample.files[ifile]);
         // Output file name: OUTPUTDIR/histo-SAMPLEGROUP_SAMPLENAME-LABEL-FILEINDEX.root
         std::cout << "Opening output file" << std::endl;
-        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+"-"+ilabel+"-"+std::to_string(ifile)+".root");
+        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+labelstring+"-"+std::to_string(ifile)+".root");
         std::cout << "Opened output file" << std::endl;
         // int status = hm.SetTree(sample.files[ifile]);
         // hm.SetOptions(Sample::WJET, true, 1., 1., false, false);
@@ -214,6 +217,7 @@ int main(int argc, char *argv[])
       std::cout << "--------------------------------\n";
     }
   }
+  */
 
   } catch (ArgException &e) {
     cerr << "error: " << e.error() << " for arg " << e.argId() << endl;

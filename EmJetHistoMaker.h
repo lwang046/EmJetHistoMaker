@@ -225,15 +225,15 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
     const int nCut = 9;
     bool cuts[nCut]; string labels[nCut];
-    cuts[0] = true                            ; labels[0]=("nocut");
-    cuts[1] = cuts[1-1] && nBasic>=4          ; labels[1]=("nBasic>=4         ");
-    cuts[2] = cuts[2-1] && ht4 > 1000         ; labels[2]=("ht4 > 1000        ");
-    cuts[3] = cuts[3-1] && (*jet_pt)[0] > 400 ; labels[3]=("(*jet_pt)[0] > 400");
-    cuts[4] = cuts[4-1] && (*jet_pt)[1] > 200 ; labels[4]=("(*jet_pt)[1] > 200");
-    cuts[5] = cuts[5-1] && (*jet_pt)[2] > 200 ; labels[5]=("(*jet_pt)[2] > 200");
-    cuts[6] = cuts[6-1] && (*jet_pt)[3] > 100 ; labels[6]=("(*jet_pt)[3] > 100");
-    cuts[7] = cuts[7-1] && nAlphaMax < 4      ; labels[7]=("nAlphaMax < 4     ");
-    cuts[8] = cuts[8-1] && nEmerging >= 2     ; labels[8]=("nEmerging >= 2    ");
+    cuts[0] = true                                                  ; labels[0]=("nocut")                                    ;
+    cuts[1] = cuts[1-1] && jet_pt->size()>=4                        ; labels[1]=("jet_pt->size()>=4 ")                       ;
+    cuts[2] = cuts[2-1] && ht4 > 1000                               ; labels[2]=("ht4 > 1000        ")                       ;
+    cuts[3] = cuts[3-1] && SelectJet_basic(0) && (*jet_pt)[0] > 400 ; labels[3]=("SelectJet_basic(0) && (*jet_pt)[0] > 400") ;
+    cuts[4] = cuts[4-1] && SelectJet_basic(1) && (*jet_pt)[1] > 200 ; labels[4]=("SelectJet_basic(1) && (*jet_pt)[1] > 200") ;
+    cuts[5] = cuts[5-1] && SelectJet_basic(2) && (*jet_pt)[2] > 200 ; labels[5]=("SelectJet_basic(2) && (*jet_pt)[2] > 200") ;
+    cuts[6] = cuts[6-1] && SelectJet_basic(3) && (*jet_pt)[3] > 100 ; labels[6]=("SelectJet_basic(3) && (*jet_pt)[3] > 100") ;
+    cuts[7] = cuts[7-1] && nAlphaMax < 4                            ; labels[7]=("nAlphaMax < 4     ")                       ;
+    cuts[8] = cuts[8-1] && nEmerging >= 2                           ; labels[8]=("nEmerging >= 2    ")                       ;
     for (int ic = 0; ic < nCut; ic ++) {
       if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), w);
     }
@@ -297,7 +297,7 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
   }
   event_ht_ = ht;
 
-  int nJet_egammacut = 0, nJet_alphaMax = 0, nJet_ipcut = 0;
+  int nJet_basic = 0, nJet_alphaMax = 0, nJet_ipcut = 0;
   int nEmerging = 0;
   // Jet loop
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
@@ -306,8 +306,8 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
       FillJetHistograms(eventnumber, ij, "__sig"+tag);
     }
     if (SelectJet_basic(ij)) {
-      FillJetHistograms(eventnumber, ij, "__JTegammacut"+tag);
-      nJet_egammacut++;
+      FillJetHistograms(eventnumber, ij, "__JTbasic"+tag);
+      nJet_basic++;
       if (SelectJet_alphaMax(ij)) {
         FillJetHistograms(eventnumber, ij, "__JTalphaMax"+tag);
         nJet_alphaMax++;
@@ -329,8 +329,8 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
 
   // Calculated quantities
   histo_->hist1d["ht"]->Fill(ht, w);
-  histo_->hist1d[string("jet_N")+"__JTegammacut"+tag]->Fill(nJet_egammacut, w);
-  // histo_->hist1d[string("nJet")+"__JTegammacut"+tag]->Fill(nEmerging, w);
+  histo_->hist1d[string("jet_N")+"__JTbasic"+tag]->Fill(nJet_basic, w);
+  // histo_->hist1d[string("nJet")+"__JTbasic"+tag]->Fill(nEmerging, w);
   // histo_->hist1d[string("nEmerging")+tag]->Fill(nEmerging, w);
   histo_->hist1d[string("jet_N")+"__JTalphaMax"+tag]->Fill(nJet_alphaMax, w);
   histo_->hist1d[string("jet_N")+"__JTipcut"+tag]->Fill(nJet_ipcut, w);
@@ -445,7 +445,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   histo_->hist1d["jet_nef"+tag]->Fill((*jet_nef)[ij], w);
   histo_->hist1d["jet_chf"+tag]->Fill((*jet_chf)[ij], w);
   histo_->hist1d["jet_nhf"+tag]->Fill((*jet_nhf)[ij], w);
-  histo_->hist1d["jet_phf"+tag]->Fill((*jet_phf)[ij], w);
+  // histo_->hist1d["jet_pef"+tag]->Fill((*jet_pef)[ij], w);
 
   // Calculated quantities
   histo_->hist1d["jet_nTrack"+tag]->Fill(nTrack, w);
@@ -463,6 +463,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"jet_pt"+tag]->Fill((*jet_pt)[ij], (*jet_alphaMax)[ij], w);
   histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"ht"+tag]->Fill(event_ht_, (*jet_alphaMax)[ij], w);
   histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"nVtx"+tag]->Fill(nVtx, (*jet_alphaMax)[ij], w);
+  histo_->hist2d[string()+"jet_maxIP"+"_VS_"+"jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], maxIP, w);
 }
 
 void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, string tag)

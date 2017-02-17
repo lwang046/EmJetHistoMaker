@@ -121,6 +121,7 @@ def user_define_histos():
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_medLogIpSig'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_prompt_frac'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_disp_frac'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['jet_alphaMax'], histo_dict['jet_maxIP'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_pt'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['jet_pt'], histo_dict['jet_disp_frac'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['nVtx'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
@@ -141,7 +142,7 @@ def user_define_histos():
     histo_clone_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
         if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_' or name=='nJet':
-            histo_clone = clone_object(histo, postfix='JTegammacut')
+            histo_clone = clone_object(histo, postfix='JTbasic')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='JTalphaMax')
             histo_clone_dict[histo_clone.name] = histo_clone
