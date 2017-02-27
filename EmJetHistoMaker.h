@@ -301,6 +301,7 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
   int nEmerging = 0;
   // Jet loop
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    if (ij>=4) break; // :JETCUT:
     FillJetHistograms(eventnumber, ij, ""+tag);
     if ( (*jet_nDarkPions)[ij] > 0 ) {
       FillJetHistograms(eventnumber, ij, "__sig"+tag);
