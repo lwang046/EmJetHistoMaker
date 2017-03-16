@@ -10,6 +10,7 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TMath.h>
+#include <TParameter.h>
 
 #include <cassert>
 #include <string>
@@ -45,6 +46,7 @@ class EmJetHistoMaker : public HistoMakerBase
   int TRACKSOURCE;
   int VERTEXSOURCE;
   void InitHistograms();
+  void FillEventCount (long eventCount1, long eventCount2);
   void FillHistograms    (long eventnumber);
   void FillEventHistograms  (long eventnumber, string tag);
   void FillJetHistograms    (long eventnumber, int ij, string tag);
@@ -63,8 +65,10 @@ class EmJetHistoMaker : public HistoMakerBase
   bool SelectJet_basic(int jet_index);
   bool SelectJet_alphaMax(int jet_index);
   bool SelectJet_ipCut(int jet_index);
+  unique_ptr<TTree> ntree_;
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
+  unique_ptr<TH1D> histo_eventCountperrun_;
   Sample sample_;
   bool isData_;
   double xsec_;
@@ -195,6 +199,21 @@ void EmJetHistoMaker::InitHistograms()
   histo_nTrueInt_ = unique_ptr<TH1F>(new TH1F("nTrueInt", "nTrueInt", 100, 0., 100.));
   if (!pileupOnly_) {
     histo_ = unique_ptr<Histos>(new Histos());
+  }
+}
+
+void EmJetHistoMaker::FillEventCount(long eventCount1, long eventCount2)
+{
+  ntree_ = unique_ptr<TTree>(new TTree("ntree_", "to store list info"));
+  auto a = new TParameter<long> ("eventCount1", eventCount1, 'M');
+  //auto b = new TParameter<long> ("eventCount2", eventCount2, '+');
+  std::cout<< "Total Number of Entries "<< eventCount1 <<std::endl;
+  std::cout<< "Number of Processed Entries "<< eventCount2 <<std::endl;
+  ntree_->GetUserInfo()->AddLast( a );
+  //ntree_->GetUserInfo()->AddLast( b );
+  histo_eventCountperrun_ = unique_ptr<TH1D>(new TH1D("eventCountperrun", "eventCountperrun", 2, 0., 2.));
+  for(int i=0; i< eventCount2; i++){
+     histo_eventCountperrun_->Fill(1.);
   }
 }
 

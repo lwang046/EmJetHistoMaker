@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
 
       // Calculate total number of events in sample
       long eventCount = 0;
+      long eventCount2 = 0;
       if (!sample.isData) {
         std::cout << "--------------------------------\n";
         for (unsigned ifile=0; ifile < sample.files.size(); ifile++) {
@@ -142,7 +143,8 @@ int main(int argc, char *argv[])
         EmJetHistoMaker hm(sample_filtered);
         hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+labelstring+"-"+std::to_string(irun)+".root");
         hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
-        hm.LoopOverCurrentTree();
+        eventCount2 = hm.LoopOverCurrentTree();
+        hm.FillEventCount(eventCount, eventCount2);
         hm.WriteHistograms();
       }
     }

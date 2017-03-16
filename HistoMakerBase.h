@@ -32,7 +32,7 @@ class HistoMakerBase : protected BaseClass
     virtual void WriteHistograms();
     virtual int SetTree(string ifilename) = 0;
     SET_MEMBER_DEFAULT(MaxEntries, long, nentries_max, -1);
-    void LoopOverCurrentTree ();
+    long LoopOverCurrentTree ();
 
   protected:
     int reportEvery_ = 10000;
@@ -46,16 +46,16 @@ class HistoMakerBase : protected BaseClass
 };
 
 // Copied from BaseClass::Loop()
-void HistoMakerBase::LoopOverCurrentTree()
+long HistoMakerBase::LoopOverCurrentTree()
 {
   if (fChain == 0) {
     std::cout << "Invalid tree!" << std::endl;
-    return;
+    return -1;
   }
   nentries_ = fChain->GetEntriesFast();
   if ( nentries_ == 0 ) {
     std::cout << "No entries!" << std::endl;
-    return;
+    return -1;
   }
   else {
     std::cout << "Number of entries: " << nentries_ << std::endl;
@@ -68,10 +68,19 @@ void HistoMakerBase::LoopOverCurrentTree()
 
   Long64_t nbytes = 0, nb = 0;
   timer_total_.Start();
+
+  Int_t fcurrent=-1;
+  long eventCount = 0;
   // Loop over all events in TChain
   for (Long64_t jentry = 0; jentry < nentries_to_process_; jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
+    if (fChain->GetTreeNumber() != fcurrent) {// New root file opened
+      fcurrent = fChain->GetTreeNumber();
+      TH1F* eventcounthist=(TH1F*)(fChain->GetDirectory()->GetFile()->GetDirectory("eventCountPreTrigger"))->Get("eventCountPreTrigger");
+      eventCount += eventcounthist->Integral();
+      std::cout << "number of events in current root file is: "<< eventcounthist->Integral()<< std::endl;
+    }
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
     // Do stuff with one entry of the TTree
@@ -83,9 +92,11 @@ void HistoMakerBase::LoopOverCurrentTree()
     // Fill histograms
     FillHistograms(jentry);
   }
+  std::cout << "Total number of processed events is : "<< eventCount << std::endl;
   double total_time_elapsed = timer_total_.RealTime();
   std::cout << "Total processing time (s): " << total_time_elapsed << std::endl;
   std::cout << std::endl;
+  return eventCount;
 }
 
 void HistoMakerBase::OpenOutputFile(string ofilename)
