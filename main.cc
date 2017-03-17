@@ -109,16 +109,27 @@ int main(int argc, char *argv[])
       long eventCount = 0;
       if (!sample.isData) {
         std::cout << "--------------------------------\n";
+        std::cout << "Calculating event count in files" << std::endl;
         for (unsigned ifile=0; ifile < sample.files.size(); ifile++) {
-          std::cout << "Calculating event count in file: " << ifile << std::endl;
+          // std::cout << "Calculating event count in file: " << ifile << std::endl;
           string filename = sample.files[ifile];
           string hname = "eventCountPreTrigger";
           TFile *f = new TFile(filename.c_str());
+          if (f->IsZombie()) {
+            std::cout << "Zombie file: " << ifile << std::endl;
+            return 1;
+          }
           TDirectory * dir = (TDirectory*)f->Get((filename+":/"+hname).c_str());
-          if (dir) {
+          if (!dir) {
+            std::cout << "File with no directory: " << ifile << std::endl;
+            return 1;
+          }
+          else {
             TH1F* eventcounthist = (TH1F*)dir->Get(hname.c_str());
             eventCount += eventcounthist->Integral();
           }
+          f->Close();
+          delete f;
         }
       }
       std::cout << "--------------------------------\n";
