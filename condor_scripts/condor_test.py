@@ -17,11 +17,15 @@ def execute(args):
     return p
     print '################################'
 
-print sys.argv
-queue = int(sys.argv[1])
-command = sys.argv[2]
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-t', '--test', action='store_true', help='Test interactively')
+parser.add_argument('queue', type=int)
+parser.add_argument('command')
+args = parser.parse_args()
+print args
 
-command_list = command.split()
+command_list = args.command.split()
 # BASEDIR = "/afs/cern.ch/user/y/yoshin/work/condor_output"
 BASEDIR = "/home/yhshin/data/condor_output"
 DATESTR = time.strftime("%Y-%m-%d")
@@ -32,7 +36,7 @@ kw_dict = {}
 kw_dict['DIRECTORY'] = DIRECTORY
 kw_dict['EXECUTABLE'] = command_list[0]
 kw_dict['ARGUMENTS']  = " ".join(command_list[1:])
-kw_dict['QUEUE']  = "%d" % queue
+kw_dict['QUEUE']  = "%d" % args.queue
 kw_dict['DATE'] = time.strftime("%Y-%m-%d")
 
 # For lxplus or generic condor clusters
@@ -66,4 +70,7 @@ jdlfile = open('test.jdl', 'w')
 jdlfile.write(jdl)
 jdlfile.close()
 
-execute("condor_submit  getenv=True test.jdl")
+if args.test:
+    execute(args.command + " 0")
+else:
+    execute("condor_submit  getenv=True test.jdl")
