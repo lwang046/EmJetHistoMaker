@@ -105,6 +105,7 @@ EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
     OUTPUT(file);
     chain->Add(file.c_str(), -1); // -1: the file is connected and the tree header read in memory to get the number of entries.
   }
+  // OUTPUT(chain->GetCurrentFile()->IsZombie());
   tree_ = chain;
   Init(tree_);
 }
@@ -202,6 +203,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
 {
   double w = CalculateEventWeight(eventnumber);
   if (debug==1) std::cout << "Entering FillHistograms" << std::endl;
+  if (debug==3) std::cout << "Eventweight is: " << w << std::endl;
 
   FillPileupHistograms(eventnumber, "");
   if (pileupOnly_) return;
@@ -240,8 +242,11 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     if (cuts[6]) {
       FillEventHistograms(eventnumber, "__EVTkinematic");
     }
-    if (cuts[8]) {
+    if (cuts[7]) {
       FillEventHistograms(eventnumber, "__EVTpvpass");
+    }
+    if (cuts[nCut-1]) {
+      FillEventHistograms(eventnumber, "__EVTallpass");
     }
   }
   // Event cut 1
@@ -556,13 +561,31 @@ bool EmJetHistoMaker::SelectJet_alphaMax(int ij)
 bool EmJetHistoMaker::SelectJet_ipCut(int ij)
 {
   bool result = true;
-  double maxIp = 0.;
-  for (unsigned itk = 0; itk < (*track_pt)[ij].size(); itk++) {
-    if( (*track_source)[ij][itk] == 0 ) {
-      if ( (*track_ipXY)[ij][itk] > maxIp ) maxIp = (*track_ipXY)[ij][itk];
+  // Calculate median 2D impact parameter (source=0)
+  int nTrack = 0;
+  double medianIP = 0.;
+  double maxIP = 0.;
+  {
+    vector<double> vector_ipXY;
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
+      if ( (*track_source)[ij][itk] == 0 ) {
+        vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
+      }
+    }
+    std::sort(vector_ipXY.begin(), vector_ipXY.end());
+    nTrack = vector_ipXY.size();
+    medianIP = 0.;
+    if (nTrack>0) {
+      if ( nTrack % 2 == 0 ) {
+        medianIP = (vector_ipXY[nTrack/2 - 1] + vector_ipXY[nTrack/2]) / 2;
+      }
+      else {
+        medianIP = (vector_ipXY[nTrack/2]);
+      }
+      maxIP = vector_ipXY[nTrack-1];
     }
   }
-  bool ipCut = maxIp > 0.4;
+  bool ipCut = medianIP > 0.09;
   result = ipCut;
   return result;
 }

@@ -166,6 +166,8 @@ def user_define_histos():
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='EVTkinematic')
             histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='EVTallpass')
+            histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
 
     return histo_dict
