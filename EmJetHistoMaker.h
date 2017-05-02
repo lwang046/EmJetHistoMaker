@@ -46,7 +46,7 @@ class EmJetHistoMaker : public HistoMakerBase
   int TRACKSOURCE;
   int VERTEXSOURCE;
   void InitHistograms();
-  void FillEventCount (long eventCount1, long eventCount2);
+  void FillEventCount (long eventCountTotal, long eventCountProcessed);
   void FillHistograms    (long eventnumber);
   void FillEventHistograms  (long eventnumber, string tag);
   void FillJetHistograms    (long eventnumber, int ij, string tag);
@@ -58,6 +58,7 @@ class EmJetHistoMaker : public HistoMakerBase
   int GetEventCountHistAndClone(string ihistname);
   int GetEventCount(string ihistname);
   void SetOptions(Sample sample=Sample::SIGNAL, bool isData=false, double xsec=1.0, long nevent=1, bool isSignal=false, bool pileupOnly=false);
+  int VerifyHistograms();
   void InitLumiReweighting();
  private:
   double CalculateEventWeight(long eventnumber);
@@ -65,10 +66,10 @@ class EmJetHistoMaker : public HistoMakerBase
   bool SelectJet_basic(int jet_index);
   bool SelectJet_alphaMax(int jet_index);
   bool SelectJet_ipCut(int jet_index);
-  unique_ptr<TTree> ntree_;
+  // unique_ptr<TTree> ntree_;
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
-  unique_ptr<TH1D> histo_eventCountperrun_;
+  unique_ptr<TH1F> histo_eventCountProcessed_;
   Sample sample_;
   bool isData_;
   double xsec_;
@@ -203,19 +204,20 @@ void EmJetHistoMaker::InitHistograms()
   }
 }
 
-void EmJetHistoMaker::FillEventCount(long eventCount1, long eventCount2)
+void EmJetHistoMaker::FillEventCount(long eventCountTotal, long eventCountProcessed)
 {
-  ntree_ = unique_ptr<TTree>(new TTree("ntree_", "to store list info"));
-  auto a = new TParameter<long> ("eventCount1", eventCount1, 'M');
-  //auto b = new TParameter<long> ("eventCount2", eventCount2, '+');
-  std::cout<< "Total Number of Entries "<< eventCount1 <<std::endl;
-  std::cout<< "Number of Processed Entries "<< eventCount2 <<std::endl;
-  ntree_->GetUserInfo()->AddLast( a );
+  // ntree_ = unique_ptr<TTree>(new TTree("ntree_", "to store list info"));
+  auto a = new TParameter<long> ("eventCountTotal", eventCountTotal, 'M');
+  a->Write();
+  //auto b = new TParameter<long> ("eventCountProcessed", eventCountProcessed, '+');
+  std::cout<< "Total Number of Entries "<< eventCountTotal <<std::endl;
+  std::cout<< "Number of Processed Entries "<< eventCountProcessed <<std::endl;
+  // ntree_->GetUserInfo()->AddLast( a );
   //ntree_->GetUserInfo()->AddLast( b );
-  histo_eventCountperrun_ = unique_ptr<TH1D>(new TH1D("eventCountperrun", "eventCountperrun", 2, 0., 2.));
-  for(int i=0; i< eventCount2; i++){
-     histo_eventCountperrun_->Fill(1.);
-  }
+  histo_eventCountProcessed_ = unique_ptr<TH1F>(new TH1F("eventCountProcessed", "eventCountProcessed", 2, 0., 2.));
+  // for(int i=0; i< eventCountProcessed; i++){
+  histo_eventCountProcessed_->Fill(1., eventCountProcessed);
+  // }
 }
 
 void EmJetHistoMaker::FillHistograms(long eventnumber)
@@ -242,6 +244,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) ) nAlphaMax++;
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) && SelectJet_ipCut(ij) ) nEmerging++;
   }
+  // Main cutflow
   {
     double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
     const int nCut = 9;
@@ -266,6 +269,23 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     }
     if (cuts[nCut-1]) {
       FillEventHistograms(eventnumber, "__EVTallpass");
+    }
+  }
+  {
+    double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
+    const int nCut = 9;
+    bool cuts[nCut]; string labels[nCut];
+    cuts[0] = true                                                  ; labels[0]=("nocut")                                    ;
+    cuts[1] = cuts[1-1] && jet_pt->size()>=4                        ; labels[1]=("jet_pt->size()>=4 ")                       ;
+    cuts[2] = cuts[2-1] && ht4 > 1000                               ; labels[2]=("ht4 > 1000        ")                       ;
+    cuts[3] = cuts[3-1] && SelectJet_basic(0) && (*jet_pt)[0] > 400 ; labels[3]=("SelectJet_basic(0) && (*jet_pt)[0] > 400") ;
+    cuts[4] = cuts[4-1] && SelectJet_basic(1) && (*jet_pt)[1] > 200 ; labels[4]=("SelectJet_basic(1) && (*jet_pt)[1] > 200") ;
+    cuts[5] = cuts[5-1] && SelectJet_basic(2) && (*jet_pt)[2] > 200 ; labels[5]=("SelectJet_basic(2) && (*jet_pt)[2] > 200") ;
+    cuts[6] = cuts[6-1] && SelectJet_basic(3) && (*jet_pt)[3] > 100 ; labels[6]=("SelectJet_basic(3) && (*jet_pt)[3] > 100") ;
+    cuts[7] = cuts[7-1] && nEmerging >= 2                           ; labels[7]=("nEmerging >= 2    ")                       ;
+    cuts[8] = cuts[8-1] && nAlphaMax < 4                            ; labels[8]=("nAlphaMax < 4     ")                       ;
+    for (int ic = 0; ic < nCut; ic ++) {
+      if ( cuts[ic] ) histo_->hist1d["cutflow2"]->Fill(labels[ic].c_str(), w);
     }
   }
   // Event cut 1
@@ -623,4 +643,15 @@ EmJetHistoMaker::SetOptions(Sample sample, bool isData, double xsec, long nevent
   nevent_ = nevent;
   isSignal_ = isSignal;
   pileupOnly_ = pileupOnly;
+}
+
+int
+EmJetHistoMaker::VerifyHistograms()
+{
+  // Verify that histograms are properly initialized
+  OUTPUT(histo_->hist1d["track_pt"]);
+  if ( ! histo_->hist1d["track_pt"] ) {
+    return 1;
+  }
+  return 0;
 }

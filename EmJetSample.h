@@ -58,7 +58,7 @@ ReadSamplesFromConfigFile(string configFileName, vector<EmJetSample>& samples)
       EmJetSample sample;
       FieldsToSample(fields, sample);
       samples.push_back(sample);
-      PrintSample(sample);
+      // PrintSample(sample);
     }
   }
 }
