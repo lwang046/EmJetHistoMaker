@@ -2,7 +2,7 @@ import ROOT as rt
 rt.TH1.SetDefaultSumw2()
 import math
 from collections import OrderedDict
-from rootutils import getTrees
+# from rootutils import getTrees
 files= OrderedDict()
 # files['WJet'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/SelectedJetAnalysis-v0/WJetSkimMuon/SingleMuon/SelectedJetAnalysis/160107_215042/output_merged_WJetSkimMuon.root"
 # files['ModelA'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/SelectedJetAnalysis-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/SelectedJetAnalysis/160107_220503/output_merged_ModelA.root"
@@ -12,7 +12,9 @@ files= OrderedDict()
 # files['Analysis-20160322'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160322-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160322/160322_171421/ntuple_merged_ModelA.root"
 # files['Analysis-20160325'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160325-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160325/160325_192306/ntuple_merged_ModelA.root"
 # files['Analysis-20160615'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160615-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160615/160615_220449/ntuple_merged_ModelA.root"
-files['Analysis-20160821'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root"
+# files['Analysis-20160821'] = "/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/Analysis-20160821-v0/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20160821/160821_201557/ntuple_merged_ModelA.root"
+files['Analysis-20170426'] = "/store/user/yoshin/EmJetAnalysis/Analysis-20170426-v2/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20170426/170426_192610/0000/ntuple_1.root"
+dirname = 'emJetAnalyzer'
 treename = 'emJetTree'
 classname = 'BaseClass'
 
@@ -21,12 +23,7 @@ for k,v in files.iteritems():
     name = k
     filename = v
     f = rt.TFile(filename)
-    trees = getTrees(f)
-    # if len(trees) != 1: print('Warning: More than one TTree in file. Calling MakeClass on the first instance.')
-    # tree = trees[0]
-    for tree in trees:
-        # print tree.GetName()
-        if tree.GetName()==treename: break
+    tree = f.Get(dirname).Get(treename)
     tree.MakeClass(classname)
     # raw_input("Press Enter to continue...")
 

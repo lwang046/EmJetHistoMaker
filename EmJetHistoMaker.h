@@ -60,6 +60,8 @@ class EmJetHistoMaker : public HistoMakerBase
   void SetOptions(Sample sample=Sample::SIGNAL, bool isData=false, double xsec=1.0, long nevent=1, bool isSignal=false, bool pileupOnly=false);
   int VerifyHistograms();
   void InitLumiReweighting();
+  // Computation functions
+  double GetAlpha(int ij); // Calculate alpha for given jet
  private:
   double CalculateEventWeight(long eventnumber);
   bool SelectJet(int jet_index);
@@ -385,6 +387,8 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
 {
   if (debug==1) std::cout << "Entering FillJetHistograms" << std::endl;
   double w = CalculateEventWeight(eventnumber);
+  // OUTPUT( (*jet_alpha2)[ij] );
+  // OUTPUT( GetAlpha(ij) );
 
   double ipXYcut = 0.025;
   // Calculate median 2D impact parameter (source=0)
@@ -486,6 +490,21 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   histo_->hist1d["jet_eta"+tag]->Fill((*jet_eta)[ij], w);
   histo_->hist1d["jet_phi"+tag]->Fill((*jet_phi)[ij], w);
   histo_->hist1d["jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz1um"   +tag]->Fill((*jet_alphaMax_dz1um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz2um"   +tag]->Fill((*jet_alphaMax_dz2um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz5um"   +tag]->Fill((*jet_alphaMax_dz5um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz10um"  +tag]->Fill((*jet_alphaMax_dz10um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz20um"  +tag]->Fill((*jet_alphaMax_dz20um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz50um"  +tag]->Fill((*jet_alphaMax_dz50um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz100um" +tag]->Fill((*jet_alphaMax_dz100um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz200um" +tag]->Fill((*jet_alphaMax_dz200um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz500um" +tag]->Fill((*jet_alphaMax_dz500um)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz1mm"   +tag]->Fill((*jet_alphaMax_dz1mm)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz2mm"   +tag]->Fill((*jet_alphaMax_dz2mm)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz5mm"   +tag]->Fill((*jet_alphaMax_dz5mm)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz1cm"   +tag]->Fill((*jet_alphaMax_dz1cm)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz2cm"   +tag]->Fill((*jet_alphaMax_dz2cm)[ij], w);
+  histo_->hist1d["jet_alphaMax_dz5cm"   +tag]->Fill((*jet_alphaMax_dz5cm)[ij], w);
   histo_->hist1d["jet_cef"+tag]->Fill((*jet_cef)[ij], w);
   histo_->hist1d["jet_nef"+tag]->Fill((*jet_nef)[ij], w);
   histo_->hist1d["jet_chf"+tag]->Fill((*jet_chf)[ij], w);
@@ -654,4 +673,20 @@ EmJetHistoMaker::VerifyHistograms()
     return 1;
   }
   return 0;
+}
+
+double
+EmJetHistoMaker::GetAlpha(int ij) // Calculate alpha for given jet
+{
+  double ptsum_total=0, ptsum=0;
+  for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
+    if ( (*track_source)[ij][itk] != 0 ) continue; // Only process tracks with source=0
+    if ( ( (*track_quality)[ij][itk] & 4 ) == 0 ) continue; // Only process tracks with "highPurity" quality
+
+    ptsum_total += (*track_pt)[ij][itk];
+    if ( (*track_pvWeight)[ij][itk] > 0 ) ptsum += (*track_pt)[ij][itk];
+  }
+
+  double alpha = ptsum/ptsum_total;
+  return alpha;
 }
