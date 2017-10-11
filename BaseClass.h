@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Tue May  2 17:50:52 2017 by ROOT version 6.06/01
+// Mon Aug 28 08:34:06 2017 by ROOT version 6.06/01
 // from TTree emJetTree/emJetTree
-// found on file: /store/user/yoshin/EmJetAnalysis/Analysis-20170426-v2/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20170426/170426_192610/0000/ntuple_1.root
+// found on file: /store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root
 //////////////////////////////////////////////////////////
 
 #ifndef BaseClass_h
@@ -38,17 +38,6 @@ public :
    Float_t         met_phi;
    Int_t           nTracks;
    Float_t         alpha_event;
-   Float_t         pv_x;
-   Float_t         pv_y;
-   Float_t         pv_z;
-   Float_t         pv_xError;
-   Float_t         pv_yError;
-   Float_t         pv_zError;
-   Float_t         pv_chi2;
-   Float_t         pv_ndof;
-   Float_t         pv_pt2sum;
-   Int_t           pv_nTracks;
-   Int_t           pv_indexInColl;
    Int_t           pdf_id1;
    Int_t           pdf_id2;
    Float_t         pdf_x1;
@@ -67,9 +56,13 @@ public :
    Bool_t          HLT_HT500;
    vector<int>     *jet_index;
    vector<int>     *jet_source;
-   vector<float>   *jet_pt;
+   vector<float>   *jet_ptRaw;
    vector<float>   *jet_eta;
    vector<float>   *jet_phi;
+   vector<float>   *jet_pt;
+   vector<float>   *jet_ptUp;
+   vector<float>   *jet_ptDown;
+   vector<float>   *jet_csv;
    vector<float>   *jet_cef;
    vector<float>   *jet_nef;
    vector<float>   *jet_chf;
@@ -139,9 +132,17 @@ public :
    vector<vector<float> > *track_pt;
    vector<vector<float> > *track_eta;
    vector<vector<float> > *track_phi;
+   vector<vector<float> > *track_ref_x;
+   vector<vector<float> > *track_ref_y;
+   vector<vector<float> > *track_ref_z;
+   vector<vector<float> > *track_d0Error;
+   vector<vector<float> > *track_dzError;
    vector<vector<float> > *track_pca_r;
    vector<vector<float> > *track_pca_eta;
    vector<vector<float> > *track_pca_phi;
+   vector<vector<float> > *track_innerHit_r;
+   vector<vector<float> > *track_innerHit_eta;
+   vector<vector<float> > *track_innerHit_phi;
    vector<vector<int> > *track_quality;
    vector<vector<int> > *track_algo;
    vector<vector<int> > *track_originalAlgo;
@@ -158,10 +159,13 @@ public :
    vector<vector<float> > *track_ipXY;
    vector<vector<float> > *track_ipZ;
    vector<vector<float> > *track_ipXYSig;
+   vector<vector<float> > *track_ip3D;
+   vector<vector<float> > *track_ip3DSig;
    vector<vector<float> > *track_dRToJetAxis;
    vector<vector<float> > *track_distanceToJet;
    vector<vector<float> > *track_minVertexDz;
    vector<vector<float> > *track_pvWeight;
+   vector<vector<float> > *track_minGenDistance;
    vector<vector<int> > *vertex_index;
    vector<vector<int> > *vertex_source;
    vector<vector<int> > *vertex_jet_index;
@@ -205,6 +209,17 @@ public :
    vector<int>     *gp_hasDarkMother;
    vector<int>     *gp_hasDarkPionMother;
    vector<int>     *gp_isTrackable;
+   vector<int>     *pv_index;
+   vector<float>   *pv_x;
+   vector<float>   *pv_y;
+   vector<float>   *pv_z;
+   vector<float>   *pv_xError;
+   vector<float>   *pv_yError;
+   vector<float>   *pv_zError;
+   vector<float>   *pv_chi2;
+   vector<float>   *pv_ndof;
+   vector<float>   *pv_pt2sum;
+   vector<int>     *pv_nTracks;
 
    // List of branches
    TBranch        *b_run;   //!
@@ -218,17 +233,6 @@ public :
    TBranch        *b_met_phi;   //!
    TBranch        *b_nTracks;   //!
    TBranch        *b_alpha_event;   //!
-   TBranch        *b_pv_x;   //!
-   TBranch        *b_pv_y;   //!
-   TBranch        *b_pv_z;   //!
-   TBranch        *b_pv_xError;   //!
-   TBranch        *b_pv_yError;   //!
-   TBranch        *b_pv_zError;   //!
-   TBranch        *b_pv_chi2;   //!
-   TBranch        *b_pv_ndof;   //!
-   TBranch        *b_pv_pt2sum;   //!
-   TBranch        *b_pv_nTracks;   //!
-   TBranch        *b_pv_indexInColl;   //!
    TBranch        *b_pdf_id1;   //!
    TBranch        *b_pdf_id2;   //!
    TBranch        *b_pdf_x1;   //!
@@ -247,9 +251,13 @@ public :
    TBranch        *b_HLT_HT500;   //!
    TBranch        *b_jet_index;   //!
    TBranch        *b_jet_source;   //!
-   TBranch        *b_jet_pt;   //!
+   TBranch        *b_jet_ptRaw;   //!
    TBranch        *b_jet_eta;   //!
    TBranch        *b_jet_phi;   //!
+   TBranch        *b_jet_pt;   //!
+   TBranch        *b_jet_ptUp;   //!
+   TBranch        *b_jet_ptDown;   //!
+   TBranch        *b_jet_csv;   //!
    TBranch        *b_jet_cef;   //!
    TBranch        *b_jet_nef;   //!
    TBranch        *b_jet_chf;   //!
@@ -319,9 +327,17 @@ public :
    TBranch        *b_track_pt;   //!
    TBranch        *b_track_eta;   //!
    TBranch        *b_track_phi;   //!
+   TBranch        *b_track_ref_x;   //!
+   TBranch        *b_track_ref_y;   //!
+   TBranch        *b_track_ref_z;   //!
+   TBranch        *b_track_d0Error;   //!
+   TBranch        *b_track_dzError;   //!
    TBranch        *b_track_pca_r;   //!
    TBranch        *b_track_pca_eta;   //!
    TBranch        *b_track_pca_phi;   //!
+   TBranch        *b_track_innerHit_r;   //!
+   TBranch        *b_track_innerHit_eta;   //!
+   TBranch        *b_track_innerHit_phi;   //!
    TBranch        *b_track_quality;   //!
    TBranch        *b_track_algo;   //!
    TBranch        *b_track_originalAlgo;   //!
@@ -338,10 +354,13 @@ public :
    TBranch        *b_track_ipXY;   //!
    TBranch        *b_track_ipZ;   //!
    TBranch        *b_track_ipXYSig;   //!
+   TBranch        *b_track_ip3D;   //!
+   TBranch        *b_track_ip3DSig;   //!
    TBranch        *b_track_dRToJetAxis;   //!
    TBranch        *b_track_distanceToJet;   //!
    TBranch        *b_track_minVertexDz;   //!
    TBranch        *b_track_pvWeight;   //!
+   TBranch        *b_track_minGenDistance;   //!
    TBranch        *b_vertex_index;   //!
    TBranch        *b_vertex_source;   //!
    TBranch        *b_vertex_jet_index;   //!
@@ -385,6 +404,17 @@ public :
    TBranch        *b_gp_hasDarkMother;   //!
    TBranch        *b_gp_hasDarkPionMother;   //!
    TBranch        *b_gp_isTrackable;   //!
+   TBranch        *b_pv_index;   //!
+   TBranch        *b_pv_x;   //!
+   TBranch        *b_pv_y;   //!
+   TBranch        *b_pv_z;   //!
+   TBranch        *b_pv_xError;   //!
+   TBranch        *b_pv_yError;   //!
+   TBranch        *b_pv_zError;   //!
+   TBranch        *b_pv_chi2;   //!
+   TBranch        *b_pv_ndof;   //!
+   TBranch        *b_pv_pt2sum;   //!
+   TBranch        *b_pv_nTracks;   //!
 
    BaseClass(TTree *tree=0);
    virtual ~BaseClass();
@@ -405,11 +435,11 @@ BaseClass::BaseClass(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/store/user/yoshin/EmJetAnalysis/Analysis-20170426-v2/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20170426/170426_192610/0000/ntuple_1.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("/store/user/yoshin/EmJetAnalysis/Analysis-20170426-v2/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20170426/170426_192610/0000/ntuple_1.root");
+         f = new TFile("/store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root");
       }
-      TDirectory * dir = (TDirectory*)f->Get("/store/user/yoshin/EmJetAnalysis/Analysis-20170426-v2/ModelA/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/Analysis-20170426/170426_192610/0000/ntuple_1.root:/emJetAnalyzer");
+      TDirectory * dir = (TDirectory*)f->Get("/store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root:/emJetAnalyzer");
       dir->GetObject("emJetTree",tree);
 
    }
@@ -454,9 +484,13 @@ void BaseClass::Init(TTree *tree)
    // Set object pointer
    jet_index = 0;
    jet_source = 0;
-   jet_pt = 0;
+   jet_ptRaw = 0;
    jet_eta = 0;
    jet_phi = 0;
+   jet_pt = 0;
+   jet_ptUp = 0;
+   jet_ptDown = 0;
+   jet_csv = 0;
    jet_cef = 0;
    jet_nef = 0;
    jet_chf = 0;
@@ -526,9 +560,17 @@ void BaseClass::Init(TTree *tree)
    track_pt = 0;
    track_eta = 0;
    track_phi = 0;
+   track_ref_x = 0;
+   track_ref_y = 0;
+   track_ref_z = 0;
+   track_d0Error = 0;
+   track_dzError = 0;
    track_pca_r = 0;
    track_pca_eta = 0;
    track_pca_phi = 0;
+   track_innerHit_r = 0;
+   track_innerHit_eta = 0;
+   track_innerHit_phi = 0;
    track_quality = 0;
    track_algo = 0;
    track_originalAlgo = 0;
@@ -545,10 +587,13 @@ void BaseClass::Init(TTree *tree)
    track_ipXY = 0;
    track_ipZ = 0;
    track_ipXYSig = 0;
+   track_ip3D = 0;
+   track_ip3DSig = 0;
    track_dRToJetAxis = 0;
    track_distanceToJet = 0;
    track_minVertexDz = 0;
    track_pvWeight = 0;
+   track_minGenDistance = 0;
    vertex_index = 0;
    vertex_source = 0;
    vertex_jet_index = 0;
@@ -592,6 +637,17 @@ void BaseClass::Init(TTree *tree)
    gp_hasDarkMother = 0;
    gp_hasDarkPionMother = 0;
    gp_isTrackable = 0;
+   pv_index = 0;
+   pv_x = 0;
+   pv_y = 0;
+   pv_z = 0;
+   pv_xError = 0;
+   pv_yError = 0;
+   pv_zError = 0;
+   pv_chi2 = 0;
+   pv_ndof = 0;
+   pv_pt2sum = 0;
+   pv_nTracks = 0;
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -609,17 +665,6 @@ void BaseClass::Init(TTree *tree)
    fChain->SetBranchAddress("met_phi", &met_phi, &b_met_phi);
    fChain->SetBranchAddress("nTracks", &nTracks, &b_nTracks);
    fChain->SetBranchAddress("alpha_event", &alpha_event, &b_alpha_event);
-   fChain->SetBranchAddress("pv_x", &pv_x, &b_pv_x);
-   fChain->SetBranchAddress("pv_y", &pv_y, &b_pv_y);
-   fChain->SetBranchAddress("pv_z", &pv_z, &b_pv_z);
-   fChain->SetBranchAddress("pv_xError", &pv_xError, &b_pv_xError);
-   fChain->SetBranchAddress("pv_yError", &pv_yError, &b_pv_yError);
-   fChain->SetBranchAddress("pv_zError", &pv_zError, &b_pv_zError);
-   fChain->SetBranchAddress("pv_chi2", &pv_chi2, &b_pv_chi2);
-   fChain->SetBranchAddress("pv_ndof", &pv_ndof, &b_pv_ndof);
-   fChain->SetBranchAddress("pv_pt2sum", &pv_pt2sum, &b_pv_pt2sum);
-   fChain->SetBranchAddress("pv_nTracks", &pv_nTracks, &b_pv_nTracks);
-   fChain->SetBranchAddress("pv_indexInColl", &pv_indexInColl, &b_pv_indexInColl);
    fChain->SetBranchAddress("pdf_id1", &pdf_id1, &b_pdf_id1);
    fChain->SetBranchAddress("pdf_id2", &pdf_id2, &b_pdf_id2);
    fChain->SetBranchAddress("pdf_x1", &pdf_x1, &b_pdf_x1);
@@ -638,9 +683,13 @@ void BaseClass::Init(TTree *tree)
    fChain->SetBranchAddress("HLT_HT500", &HLT_HT500, &b_HLT_HT500);
    fChain->SetBranchAddress("jet_index", &jet_index, &b_jet_index);
    fChain->SetBranchAddress("jet_source", &jet_source, &b_jet_source);
-   fChain->SetBranchAddress("jet_pt", &jet_pt, &b_jet_pt);
+   fChain->SetBranchAddress("jet_ptRaw", &jet_ptRaw, &b_jet_ptRaw);
    fChain->SetBranchAddress("jet_eta", &jet_eta, &b_jet_eta);
    fChain->SetBranchAddress("jet_phi", &jet_phi, &b_jet_phi);
+   fChain->SetBranchAddress("jet_pt", &jet_pt, &b_jet_pt);
+   fChain->SetBranchAddress("jet_ptUp", &jet_ptUp, &b_jet_ptUp);
+   fChain->SetBranchAddress("jet_ptDown", &jet_ptDown, &b_jet_ptDown);
+   fChain->SetBranchAddress("jet_csv", &jet_csv, &b_jet_csv);
    fChain->SetBranchAddress("jet_cef", &jet_cef, &b_jet_cef);
    fChain->SetBranchAddress("jet_nef", &jet_nef, &b_jet_nef);
    fChain->SetBranchAddress("jet_chf", &jet_chf, &b_jet_chf);
@@ -710,9 +759,17 @@ void BaseClass::Init(TTree *tree)
    fChain->SetBranchAddress("track_pt", &track_pt, &b_track_pt);
    fChain->SetBranchAddress("track_eta", &track_eta, &b_track_eta);
    fChain->SetBranchAddress("track_phi", &track_phi, &b_track_phi);
+   fChain->SetBranchAddress("track_ref_x", &track_ref_x, &b_track_ref_x);
+   fChain->SetBranchAddress("track_ref_y", &track_ref_y, &b_track_ref_y);
+   fChain->SetBranchAddress("track_ref_z", &track_ref_z, &b_track_ref_z);
+   fChain->SetBranchAddress("track_d0Error", &track_d0Error, &b_track_d0Error);
+   fChain->SetBranchAddress("track_dzError", &track_dzError, &b_track_dzError);
    fChain->SetBranchAddress("track_pca_r", &track_pca_r, &b_track_pca_r);
    fChain->SetBranchAddress("track_pca_eta", &track_pca_eta, &b_track_pca_eta);
    fChain->SetBranchAddress("track_pca_phi", &track_pca_phi, &b_track_pca_phi);
+   fChain->SetBranchAddress("track_innerHit_r", &track_innerHit_r, &b_track_innerHit_r);
+   fChain->SetBranchAddress("track_innerHit_eta", &track_innerHit_eta, &b_track_innerHit_eta);
+   fChain->SetBranchAddress("track_innerHit_phi", &track_innerHit_phi, &b_track_innerHit_phi);
    fChain->SetBranchAddress("track_quality", &track_quality, &b_track_quality);
    fChain->SetBranchAddress("track_algo", &track_algo, &b_track_algo);
    fChain->SetBranchAddress("track_originalAlgo", &track_originalAlgo, &b_track_originalAlgo);
@@ -729,10 +786,13 @@ void BaseClass::Init(TTree *tree)
    fChain->SetBranchAddress("track_ipXY", &track_ipXY, &b_track_ipXY);
    fChain->SetBranchAddress("track_ipZ", &track_ipZ, &b_track_ipZ);
    fChain->SetBranchAddress("track_ipXYSig", &track_ipXYSig, &b_track_ipXYSig);
+   fChain->SetBranchAddress("track_ip3D", &track_ip3D, &b_track_ip3D);
+   fChain->SetBranchAddress("track_ip3DSig", &track_ip3DSig, &b_track_ip3DSig);
    fChain->SetBranchAddress("track_dRToJetAxis", &track_dRToJetAxis, &b_track_dRToJetAxis);
    fChain->SetBranchAddress("track_distanceToJet", &track_distanceToJet, &b_track_distanceToJet);
    fChain->SetBranchAddress("track_minVertexDz", &track_minVertexDz, &b_track_minVertexDz);
    fChain->SetBranchAddress("track_pvWeight", &track_pvWeight, &b_track_pvWeight);
+   fChain->SetBranchAddress("track_minGenDistance", &track_minGenDistance, &b_track_minGenDistance);
    fChain->SetBranchAddress("vertex_index", &vertex_index, &b_vertex_index);
    fChain->SetBranchAddress("vertex_source", &vertex_source, &b_vertex_source);
    fChain->SetBranchAddress("vertex_jet_index", &vertex_jet_index, &b_vertex_jet_index);
@@ -776,6 +836,17 @@ void BaseClass::Init(TTree *tree)
    fChain->SetBranchAddress("gp_hasDarkMother", &gp_hasDarkMother, &b_gp_hasDarkMother);
    fChain->SetBranchAddress("gp_hasDarkPionMother", &gp_hasDarkPionMother, &b_gp_hasDarkPionMother);
    fChain->SetBranchAddress("gp_isTrackable", &gp_isTrackable, &b_gp_isTrackable);
+   fChain->SetBranchAddress("pv_index", &pv_index, &b_pv_index);
+   fChain->SetBranchAddress("pv_x", &pv_x, &b_pv_x);
+   fChain->SetBranchAddress("pv_y", &pv_y, &b_pv_y);
+   fChain->SetBranchAddress("pv_z", &pv_z, &b_pv_z);
+   fChain->SetBranchAddress("pv_xError", &pv_xError, &b_pv_xError);
+   fChain->SetBranchAddress("pv_yError", &pv_yError, &b_pv_yError);
+   fChain->SetBranchAddress("pv_zError", &pv_zError, &b_pv_zError);
+   fChain->SetBranchAddress("pv_chi2", &pv_chi2, &b_pv_chi2);
+   fChain->SetBranchAddress("pv_ndof", &pv_ndof, &b_pv_ndof);
+   fChain->SetBranchAddress("pv_pt2sum", &pv_pt2sum, &b_pv_pt2sum);
+   fChain->SetBranchAddress("pv_nTracks", &pv_nTracks, &b_pv_nTracks);
    Notify();
 }
 

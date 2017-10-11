@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <functional>
 
+#include "LHAPDF/LHAPDF.h"
+
 using std::string;
 using std::vector;
 using std::unique_ptr;
@@ -27,6 +29,61 @@ using std::unique_ptr;
 #ifndef OUTPUT
 #define OUTPUT(x) std::cout<<#x << ": " << x << std::endl
 #endif
+
+// int maintest(int argc, char* argv[]) {
+
+//   if (argc < 3) {
+//     cerr << "You must specify a PDF set and member number" << endl;
+//     return 1;
+//   }
+
+//   const string setname = argv[1];
+//   const string smem = argv[2];
+//   const int imem = boost::lexical_cast<int>(smem);
+//   const double Q = boost::lexical_cast<double>(argv[3]);
+//   const double id1 = boost::lexical_cast<double>(argv[4]);
+//   const double id2 = boost::lexical_cast<double>(argv[5]);
+//   const double x1 = boost::lexical_cast<double>(argv[6]);
+//   const double x2 = boost::lexical_cast<double>(argv[7]);
+//   const double pdf1 = boost::lexical_cast<double>(argv[8]);
+//   const double pdf2 = boost::lexical_cast<double>(argv[9]);
+
+//   // Testing 2
+//   std::cout<< "Testing 2" << std::endl;
+//   {
+//     int k =1;
+//     // Initialize pdf set
+//     std::cout<< "Testing 2: Initializing" << std::endl;
+//     const PDF* pdf = mkPDF(setname, imem);
+//     std::cout<< "Testing 2: Done initializing" << std::endl;
+
+//     // unsigned int nweights = 1;
+//     // std::cout<< "Testing 2: numberPDF " << LHAPDF::numberPDF(k) << std::endl;
+//     // ;
+//     // if (LHAPDF::numberPDF(k)>1) nweights += LHAPDF::numberPDF(k);
+//     // std::cout<< "Testing 2: 3" << std::endl;
+//     int i=imem;
+//     {
+//       double newpdf1 = pdf->xfxQ(id1, x1, Q)/x1;
+//       std::cout<< "Testing 2: 4" << std::endl;
+//       double newpdf2 = pdf->xfxQ(id2, x2, Q)/x2;
+
+//       std::cout<< std::endl;
+//       std::cout<< "Method 2:" << std::endl;
+//       std::cout<< "Comparing original and calculated pdf values:" << std::endl;
+//       std::cout<< pdf1 << " " << pdf2 << std::endl;
+//       std::cout<< newpdf1 << " " << newpdf2 << std::endl;
+
+//       std::cout<< std::endl;
+//       std::cout<< "Relative event weight:" << std::endl;
+//       std::cout<< (newpdf1*newpdf2)/(pdf1*pdf2) << std::endl;
+//       std::cout<< std::endl;
+//     }
+//   }
+
+//   return 0;
+// }
+
 
 const int debug = 0;
 
@@ -52,6 +109,7 @@ class EmJetHistoMaker : public HistoMakerBase
   void FillJetHistograms    (long eventnumber, int ij, string tag);
   void FillTrackHistograms  (long eventnumber, int ij, int itk, string tag);
   void FillPileupHistograms (long eventnumber, string tag);
+  void FillHltHistograms    (long eventnumber);
   void PrintEvent (long eventnumber, string comment);
   int SetTree(string ifilename);
   int SetTree();
@@ -60,14 +118,17 @@ class EmJetHistoMaker : public HistoMakerBase
   void SetOptions(Sample sample=Sample::SIGNAL, bool isData=false, double xsec=1.0, long nevent=1, bool isSignal=false, bool pileupOnly=false);
   int VerifyHistograms();
   void InitLumiReweighting();
+  void InitPdfSet(string setname);
   // Computation functions
   double GetAlpha(int ij); // Calculate alpha for given jet
  private:
   double CalculateEventWeight(long eventnumber);
+  double CalculatePdfShift(long eventnumber); // direction: 0 = no shift, +1 = shifted up, -1 = shifted down
   bool SelectJet(int jet_index);
   bool SelectJet_basic(int jet_index);
   bool SelectJet_alphaMax(int jet_index);
   bool SelectJet_ipCut(int jet_index);
+  bool SelectTrack(int jet_index, int track_index);
   // unique_ptr<TTree> ntree_;
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
@@ -80,8 +141,10 @@ class EmJetHistoMaker : public HistoMakerBase
   bool pileupOnly_;
   string file_; // Path to current input file
   unique_ptr<reweight::LumiReWeighting> LumiWeights_;
+  vector<LHAPDF::PDF*> PdfMembers_;
   // Calculated variables
   double event_ht_;
+
 };
 
 EmJetHistoMaker::EmJetHistoMaker()
@@ -115,6 +178,11 @@ EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
   // OUTPUT(chain->GetCurrentFile()->IsZombie());
   tree_ = chain;
   Init(tree_);
+  TRACKSOURCE = 0;
+  // InitLumiReweighting();
+  if (isData_) {
+    InitPdfSet("NNPDF23_lo_as_0130_qed");
+  }
 }
 
 void EmJetHistoMaker::InitLumiReweighting()
@@ -125,6 +193,11 @@ void EmJetHistoMaker::InitLumiReweighting()
   std::string mcHist   = "nTrueInt";
   std::string dataHist = "pileup";
   LumiWeights_ = unique_ptr<reweight::LumiReWeighting>(new reweight::LumiReWeighting(mcFile, dataFile, mcHist, dataHist));
+}
+
+void EmJetHistoMaker::InitPdfSet(string setname)
+{
+  PdfMembers_ = LHAPDF::mkPDFs(setname);
 }
 
 int EmJetHistoMaker::SetTree(std::string filename)
@@ -231,6 +304,8 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   FillPileupHistograms(eventnumber, "");
   if (pileupOnly_) return;
 
+  FillHltHistograms(eventnumber);
+
   FillEventHistograms(eventnumber, "");
   int nBasic = 0;
   int nAlphaMax = 0;
@@ -335,6 +410,9 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
   if (debug==1) std::cout << "Entering FillEventHistograms" << std::endl;
 
   double w = CalculateEventWeight(eventnumber);
+  if (!isData_) {
+    double pdfshift = CalculatePdfShift(eventnumber);
+  }
 
   // Calculate ht
   double ht = 0;
@@ -555,6 +633,28 @@ void EmJetHistoMaker::FillPileupHistograms(long eventnumber, string tag)
   histo_nTrueInt_->Fill(nTrueInt, weight);
 }
 
+void EmJetHistoMaker::FillHltHistograms(long eventnumber)
+{
+  if ( (*jet_pt).size() < 4 ) return; //:CUT: Skip events with less than 4 saved jets
+  // Calculate ht
+  double ht = 0;
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    ht += (*jet_pt)[ij];
+  }
+  // OUTPUT((*jet_pt).size());
+  double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
+
+  histo_->hist1d["PFHT800"]->Fill(HLT_PFHT800);
+  histo_->hist2d["PFHT800_VS_ht"]->Fill(ht, HLT_PFHT800);
+  histo_->hist2d["PFHT800_VS_ht4"]->Fill(ht4, HLT_PFHT800);
+  if (HLT_PFHT475) {
+    histo_->hist1d["PFHT800__PFHT475"]->Fill(HLT_PFHT800);
+    histo_->hist2d["PFHT800__PFHT475_VS_ht"]->Fill(ht, HLT_PFHT800);
+    histo_->hist2d["PFHT800__PFHT475_VS_ht4"]->Fill(ht4, HLT_PFHT800);
+  }
+
+}
+
 double EmJetHistoMaker::CalculateEventWeight(long eventnumber)
 {
   double weight = 0.0;
@@ -569,6 +669,54 @@ double EmJetHistoMaker::CalculateEventWeight(long eventnumber)
   }
   return weight;
 }
+
+double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
+{
+  const double Q    = pdf_scalePDF;
+  const double id1  = pdf_id1;
+  const double id2  = pdf_id2;
+  const double x1   = pdf_x1;
+  const double x2   = pdf_x2;
+  const double pdf1 = pdf_pdf1;
+  const double pdf2 = pdf_pdf2;
+  const int nWeights = PdfMembers_.size() - 1; // Number of variations not counting central
+  // OUTPUT(id1);
+  // OUTPUT(id2);
+  // OUTPUT(x1);
+  // OUTPUT(x2);
+
+  //Loop over members of a given PDF set and get the mean
+  float mean = 0;
+  for(int ii=1; ii < nWeights; ++ii){
+    auto pdf = PdfMembers_[ii];
+    const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
+    const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
+    // OUTPUT(xpdf1_new);
+    // OUTPUT(xpdf2_new);
+    double weight = xpdf1_new * xpdf2_new;
+    mean += weight;
+  }
+  mean /= nWeights;
+  // OUTPUT(mean);
+  // OUTPUT(pdf1*pdf2);
+
+  // loop again for the rms
+  float rmssq = 0;
+  for(int ii=1; ii < nWeights; ++ii){
+    auto pdf = PdfMembers_[ii];
+    const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
+    const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
+    double weight = xpdf1_new * xpdf2_new;
+    rmssq += (weight - mean)*(weight - mean);
+  }
+  rmssq		/= float((nWeights - 1));
+
+  float rms = TMath::Sqrt(rmssq);
+  float shift = TMath::Abs(rms/mean);
+  // OUTPUT(shift);
+  return shift;
+}
+
 bool EmJetHistoMaker::SelectJet(int ij)
 {
   if (!(ij < 4)) return false;
@@ -645,6 +793,14 @@ bool EmJetHistoMaker::SelectJet_ipCut(int ij)
   }
   bool ipCut = medianIP > 0.09;
   result = ipCut;
+  return result;
+}
+
+bool EmJetHistoMaker::SelectTrack(int ij, int itk)
+{
+  bool result = true;
+  bool result1 = (*track_source)[ij][itk] == 0;
+  bool result2 = ( (*track_quality)[ij][itk] & 4 ) > 0;
   return result;
 }
 

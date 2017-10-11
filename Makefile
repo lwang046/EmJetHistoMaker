@@ -12,8 +12,8 @@ CC = g++
 
 # define any compile-time flags
 CFLAGS = -Wall -g -pg
-CXXFLAGS=`root-config --cflags` -std=c++0x
-LDFLAGS=`root-config --ldflags`
+CXXFLAGS=`root-config --cflags` -std=c++0x `lhapdf-config --cflags`
+LDFLAGS=`root-config --ldflags` `lhapdf-config --ldflags`
 LDLIBS=`root-config --glibs`
 
 # define any directories containing header files other than /usr/include
@@ -62,7 +62,7 @@ all:    $(MAIN)
 	@echo  Simple compiler named $(MAIN) has been compiled
 
 $(MAIN): $(OBJS) 
-	$(CC) $(CFLAGS) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LDLIBS) $(LFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LDLIBS) $(LDFLAGS) $(LFLAGS) $(LIBS)
 
 # this is a suffix replacement rule for building .o's from .c's
 # it uses automatic variables $<: the name of the prerequisite of
