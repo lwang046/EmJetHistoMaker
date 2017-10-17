@@ -55,6 +55,7 @@ queue ${QUEUE}
 jdl_template ="""
 Universe = vanilla
 Requirements = TARGET.FileSystemDomain == "privnet" && machine != "r510-0-6.privnet"
++IsHighPriorityJob = True
 Executable            = ${EXECUTABLE}
 Arguments             = ${ARGUMENTS} $(ProcId)
 Output                = ${DIRECTORY}/condor_test.$(ClusterId).$(ProcId).out

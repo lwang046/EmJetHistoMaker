@@ -6,6 +6,7 @@ generate_XXX functions are called from cog to generate code fragments.
 All other functions are used internally."""
 
 from histo_functions import *
+import array
 
 standalone = False
 if __name__=='__main__':
