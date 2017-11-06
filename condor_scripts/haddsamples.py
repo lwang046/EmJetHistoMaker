@@ -21,6 +21,10 @@ args = parser.parse_args()
 
 dir_to_hadd = args.directory
 
+if use_ahadd: haddcommand = 'ahadd.py'
+else        : haddcommand = 'hadd'
+if args.force: haddcommand = haddcommand + ' -f'
+
 samplepaths_to_hadd = listdir_fullpath(dir_to_hadd)
 samplepaths_to_hadd = [s for s in samplepaths_to_hadd if os.path.isdir(s)] # Only look at directories
 samples_to_hadd = [os.path.basename(s.rstrip("/")) for s in samplepaths_to_hadd]
@@ -34,9 +38,6 @@ for s in samples_to_hadd:
     print ofilepath
     print files_to_hadd[:5]
     # command = '$EMJETHISTOMAKERDIR/haddnorm/haddnorm eventCountPreTrigger %s %s' % (ofilepath, ' '.join(files_to_hadd[:2]))
-    if use_ahadd: haddcommand = 'ahadd.py'
-    else        : haddcommand = 'hadd'
-    if args.force: haddcommand = haddcommand + ' -f'
     command = '%s %s %s' % (haddcommand, ofilepath, ' '.join(files_to_hadd))
     subprocess.call([command], shell=True)
     # files_to_hadd_concat = " ".join(files_to_hadd)

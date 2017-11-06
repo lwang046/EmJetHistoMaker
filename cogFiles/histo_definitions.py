@@ -40,6 +40,9 @@ def user_define_bins():
     binedges = map(lambda x: 10**x, compute_fixed_bins(20, -3., +2.))
     name = 'vertex_Lxy'          ; binning_dict[name] = VBins(len(binedges)-1, binedges, name)
     name = 'vertex_mass'         ; binning_dict[name] = VBins(len(binedges)-1, binedges, name)
+    # binedges = map(lambda x: 10**x, compute_fixed_bins(1000, -3+5., +2+5.))
+    # binedges.insert(0, 0) # Add 0 as lower limit for first bin
+    # name = 'sys_track_ipXY'      ; binning_dict[name] = VBins(len(binedges)-1, binedges, name)
     return binning_dict
 
 def user_define_histos():
@@ -48,6 +51,7 @@ def user_define_histos():
     histo_dict = OrderedDict()
     name = 'cutflow'                   ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
     name = 'cutflow2'                  ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
+    name = 'pdfshift'                  ; histo_dict[name] = Histo1F(name , Bins(100 , -1. ,  1.  ) );
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'nEmerging'                 ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
@@ -102,6 +106,12 @@ def user_define_histos():
     name = 'jet_phf'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'jet_missInnerHit_frac'     ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'sumMedianLogIpSig'         ; histo_dict[name] = Histo1F(name , Bins(100 , -25 ,  25  ) )
+    # name = 'sys_track_ipXY'            ; histo_dict[name] = Histo1D(name , vbins['sys_track_ipXY'] )
+    name = 'sys_log_track_ipXY'        ; histo_dict[name] = Histo1D(name , Bins(2000, -8. , 2.   ) )
+    name = 'sys_log_track_ipXYSig'     ; histo_dict[name] = Histo1D(name , Bins(2000, -5. , 5.   ) )
+    name = 'sys_track_3dSig'           ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 19.  ) )
+    name = 'test_jet_medianIP'         ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
+    name = 'test_jet_medianAbsIP'      ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'track_pt'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
     name = 'track_eta'                 ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'track_phi'                 ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
@@ -193,6 +203,17 @@ def user_define_histos():
             histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
 
+    # Systematic variations
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name=='cutflow':
+            histo_clone = clone_object(histo, postfix='PdfUp')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='PdfDn')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
+
+
     return histo_dict
 
 
@@ -244,11 +265,15 @@ def calculate_index(histo_dict):
     """Takes histo_dict and calculates index in vectors based on their order in dictionary and their type (1D vs 2D)"""
     index_1d = 0
     index_2d = 0
+    index_1d_double = 0
     histo_id_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
         if type(histo).__name__ == 'Histo1F':
             histo_id_dict[name] = index_1d
             index_1d += 1
+        if type(histo).__name__ == 'Histo1D':
+            histo_id_dict[name] = index_1d_double
+            index_1d_double += 1
         elif type(histo).__name__ == 'Histo2F':
             histo_id_dict[name] = index_2d
             index_2d += 1

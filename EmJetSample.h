@@ -79,6 +79,9 @@ FileToLines(string ifileName, vector<string>& result)
 void
 LineToFields(string iline, vector<string>& result)
 {
+  if (iline.size()==0) {
+    return; // Ignore empty lines
+  }
   if (iline[0]=='#') {
     // std::cout << "Ignoring comment line" << std::endl;
     return; // Ignore lines that start with '#', return empty vector

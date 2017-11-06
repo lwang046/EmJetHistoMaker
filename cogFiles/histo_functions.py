@@ -10,6 +10,7 @@ Bins    = namedtuple('Bins'    , ['nBins' , 'min'      , 'max'     , ]) # Fixed 
 VBins   = namedtuple('VBins'   , ['nBins' , 'binedges' , 'binname' , ]) # Variable width binning - must come with name since variable width bins are specified by passing an array
 Histo1F = namedtuple('Histo1F' , ['name'  , 'binsX'     , ])           # binsX or binsY contains objects of type Bins or VBins
 Histo2F = namedtuple('Histo2F' , ['name'  , 'binsX'    , 'binsY'   , ])
+Histo1D = namedtuple('Histo1D' , ['name'  , 'binsX'     , ])           # binsX or binsY contains objects of type Bins or VBins
 
 from collections import OrderedDict
 
@@ -32,10 +33,12 @@ def compute_fixed_bins(nBins, xMin, xMax):
 def get_type_str(obj):
     if   type(obj).__name__ == 'Histo1F': return 'TH1F'
     elif type(obj).__name__ == 'Histo2F': return 'TH2F'
+    elif type(obj).__name__ == 'Histo1D': return 'TH1D'
 
 def get_map_str(obj):
     if   type(obj).__name__ == 'Histo1F': return 'hist1d'
     elif type(obj).__name__ == 'Histo2F': return 'hist2d'
+    if   type(obj).__name__ == 'Histo1D': return 'hist1d_double'
 
 def histo_combine1Dto2D(histoX, histoY):
     """Takes two TH1F objects as input and returns a TH2F by combining the inputs"""

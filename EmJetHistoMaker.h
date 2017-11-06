@@ -1,6 +1,7 @@
 #include "HistoMakerBase.h"
 #include "EmJetHistos.h"
 #include "EmJetSample.h"
+#include "EmJetSystematics.h"
 #include "LumiReWeightingStandAlone.h"
 
 #include <TROOT.h>
@@ -48,8 +49,10 @@ class EmJetHistoMaker : public HistoMakerBase
   int TRACKSOURCE;
   int VERTEXSOURCE;
   void InitHistograms();
-  void FillEventCount (long eventCountTotal, long eventCountProcessed);
+  void FillEventCount (long eventCountPreTrigger);
   void FillHistograms    (long eventnumber);
+  void FillCutflowHistograms (long eventnumber);
+  void FillSystematicHistograms (long eventnumber);
   void FillEventHistograms  (long eventnumber, string tag);
   void FillJetHistograms    (long eventnumber, int ij, string tag);
   void FillTrackHistograms  (long eventnumber, int ij, int itk, string tag);
@@ -91,7 +94,7 @@ class EmJetHistoMaker : public HistoMakerBase
   // unique_ptr<TTree> ntree_;
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
-  unique_ptr<TH1F> histo_eventCountProcessed_;
+  unique_ptr<TH1F> histo_eventCountPreTrigger_;
   Sample sample_;
   bool isData_;
   double xsec_;
@@ -143,8 +146,9 @@ EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
   Init(tree_);
   TRACKSOURCE = 0;
   // InitLumiReweighting();
-  if (isData_) {
-    InitPdfSet("NNPDF23_lo_as_0130_qed");
+  if (!isData_) {
+    // InitPdfSet("NNPDF30_lo_as_0130");
+    InitPdfSet("CT14nlo");
   }
 }
 
@@ -272,6 +276,10 @@ int EmJetHistoMaker::GetEventCount(string ihistname)
 
 void EmJetHistoMaker::InitHistograms()
 {
+  EmJetSystematics sys;
+  sys.SetFilenames("/home/yhshin/data/condor_output/2017-11-04/histos-sys1/histo-JetHT_G1.root", "/home/yhshin/data/condor_output/2017-11-04/histos-sys1/histo-QCD.root");
+  OUTPUT(sys.CalculateIpXYShift());
+
   TH1::SetDefaultSumw2();
   histo_nTrueInt_ = unique_ptr<TH1F>(new TH1F("nTrueInt", "nTrueInt", 100, 0., 100.));
   if (!pileupOnly_) {
@@ -279,19 +287,17 @@ void EmJetHistoMaker::InitHistograms()
   }
 }
 
-void EmJetHistoMaker::FillEventCount(long eventCountTotal, long eventCountProcessed)
+void EmJetHistoMaker::FillEventCount(long eventCountPreTrigger)
 {
   // ntree_ = unique_ptr<TTree>(new TTree("ntree_", "to store list info"));
-  auto a = new TParameter<long> ("eventCountTotal", eventCountTotal, 'M');
-  a->Write();
-  //auto b = new TParameter<long> ("eventCountProcessed", eventCountProcessed, '+');
-  std::cout<< "Total Number of Entries "<< eventCountTotal <<std::endl;
-  std::cout<< "Number of Processed Entries "<< eventCountProcessed <<std::endl;
+  //auto b = new TParameter<long> ("eventCountPreTrigger", eventCountPreTrigger, '+');
+  // std::cout<< "Total Number of Entries "<< eventCountTotal <<std::endl;
+  std::cout<< "Number of Processed Entries "<< eventCountPreTrigger <<std::endl;
   // ntree_->GetUserInfo()->AddLast( a );
   //ntree_->GetUserInfo()->AddLast( b );
-  histo_eventCountProcessed_ = unique_ptr<TH1F>(new TH1F("eventCountProcessed", "eventCountProcessed", 2, 0., 2.));
-  // for(int i=0; i< eventCountProcessed; i++){
-  histo_eventCountProcessed_->Fill(1., eventCountProcessed);
+  histo_eventCountPreTrigger_ = unique_ptr<TH1F>(new TH1F("eventCountPreTrigger", "eventCountPreTrigger", 2, 0., 2.));
+  // for(int i=0; i< eventCountPreTrigger; i++){
+  histo_eventCountPreTrigger_->Fill(1., eventCountPreTrigger);
   // }
 }
 
@@ -307,23 +313,33 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   FillHltHistograms(eventnumber);
 
   // FillEventHistograms(eventnumber, "");
+
+  FillCutflowHistograms(eventnumber);
+  FillSystematicHistograms(eventnumber);
+}
+
+void EmJetHistoMaker::FillCutflowHistograms (long eventnumber)
+{
+  double w = CalculateEventWeight(eventnumber);
+  if (debug==1) std::cout << "Entering FillCutflowHistograms" << std::endl;
+
+  double pdfshift = 0.;
+  if(!isData_) {
+    pdfshift = CalculatePdfShift(eventnumber);
+    if (debug==5) std::cout << "PdfShift is: " << pdfshift << std::endl;
+    histo_->hist1d["pdfshift"]->Fill(pdfshift, w);
+  }
+
   int nBasic = 0;
   int nAlphaMax = 0;
   int nEmerging = 0;
-  // bool pt_cuts[4];
-  // pt_cuts[0] = (*jet_pt)[0] > 400                 ;
-  // pt_cuts[1] = (*jet_pt)[1] > 200 && pt_cuts[1-1] ;
-  // pt_cuts[2] = (*jet_pt)[2] > 200 && pt_cuts[2-1] ;
-  // pt_cuts[3] = (*jet_pt)[3] > 100 && pt_cuts[3-1] ;
   for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
     if (ij>3) break;
     if ( SelectJet_basic(ij) ) nBasic++;
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) ) nAlphaMax++;
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) && SelectJet_ipCut(ij) ) nEmerging++;
   }
-  // Main cutflow
-  {
-    double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
+  double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
     // Find basic jets
     vector<int> ijs_basic;
     for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
@@ -339,7 +355,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
         ijs_emerging.push_back(ij);
       }
     }
-    const int nCut = 13;
+    const int nCut = 14;
     bool cuts[nCut]; string labels[nCut];
     int i=0;
     cuts[0] = true                                  ; labels[0]=( "nocut                    ") ; i++ ;
@@ -354,9 +370,26 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     cuts[i] = cuts[i-1] && (*jet_pt)[1] > 300       ; labels[i]=( "(*jet_pt)[1] > 300       ") ; i++ ;
     cuts[i] = cuts[i-1] && (*jet_pt)[2] > 200       ; labels[i]=( "(*jet_pt)[2] > 200       ") ; i++ ;
     cuts[i] = cuts[i-1] && (*jet_pt)[3] > 150       ; labels[i]=( "(*jet_pt)[3] > 150       ") ; i++ ;
+    cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1 ; labels[i]=( "ijs_emerging.size() >= 1 ") ; i++ ;
     cuts[i] = cuts[i-1] && ijs_emerging.size() >= 2 ; labels[i]=( "ijs_emerging.size() >= 2 ") ; i++ ;
     for (int ic = 0; ic < nCut; ic ++) {
-      if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), w);
+      if (isData_) {
+        if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), 1);
+      }
+      else {
+        if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), w);
+        if ( cuts[ic] ) histo_->hist1d["cutflow__PdfUp"]->Fill(labels[ic].c_str(), w*(1+pdfshift));
+        if ( cuts[ic] ) histo_->hist1d["cutflow__PdfDn"]->Fill(labels[ic].c_str(), w*(1-pdfshift));
+      }
+    }
+    if (cuts[11]) {
+      for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+        if (ij>=4) break; // :JETCUT:
+        if (SelectJet_basic(ij)) {
+          histo_->hist1d["test_jet_medianIP"]->Fill(GetMedianIP(ij) , w);
+          histo_->hist1d["test_jet_medianAbsIP"]->Fill(GetfabsMedianIP(ij) , w);
+        }
+      }
     }
     if (cuts[6]) {
       // FillEventHistograms(eventnumber, "__EVTkinematic");
@@ -367,62 +400,26 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     if (cuts[nCut-1]) {
       // FillEventHistograms(eventnumber, "__EVTallpass");
     }
-  }
-  {
-    double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
-    const int nCut = 9;
-    bool cuts[nCut]; string labels[nCut];
-    cuts[0] = true                                                  ; labels[0]=("nocut")                                    ;
-    cuts[1] = cuts[1-1] && jet_pt->size()>=4                        ; labels[1]=("jet_pt->size()>=4 ")                       ;
-    cuts[2] = cuts[2-1] && ht4 > 1000                               ; labels[2]=("ht4 > 1000        ")                       ;
-    cuts[3] = cuts[3-1] && SelectJet_basic(0) && (*jet_pt)[0] > 400 ; labels[3]=("SelectJet_basic(0) && (*jet_pt)[0] > 400") ;
-    cuts[4] = cuts[4-1] && SelectJet_basic(1) && (*jet_pt)[1] > 200 ; labels[4]=("SelectJet_basic(1) && (*jet_pt)[1] > 200") ;
-    cuts[5] = cuts[5-1] && SelectJet_basic(2) && (*jet_pt)[2] > 200 ; labels[5]=("SelectJet_basic(2) && (*jet_pt)[2] > 200") ;
-    cuts[6] = cuts[6-1] && SelectJet_basic(3) && (*jet_pt)[3] > 100 ; labels[6]=("SelectJet_basic(3) && (*jet_pt)[3] > 100") ;
-    cuts[7] = cuts[7-1] && nEmerging >= 2                           ; labels[7]=("nEmerging >= 2    ")                       ;
-    cuts[8] = cuts[8-1] && nAlphaMax < 4                            ; labels[8]=("nAlphaMax < 4     ")                       ;
-    for (int ic = 0; ic < nCut; ic ++) {
-      if ( cuts[ic] ) histo_->hist1d["cutflow2"]->Fill(labels[ic].c_str(), w);
+}
+
+void EmJetHistoMaker::FillSystematicHistograms (long eventnumber)
+{
+  double w = CalculateEventWeight(eventnumber);
+  if (debug==1) std::cout << "Entering FillSystematicHistograms" << std::endl;
+
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
+      if( (*track_source)[ij][itk]!=0 ) continue;
+      if ( ( (*track_quality)[ij][itk] & 4 ) == 0 ) continue; // Only process tracks with "highPurity" quality
+      // OUTPUT((*track_ipXY)[ij][itk]);
+      // histo_->hist1d_double["sys_track_ipXY"]->Fill( abs((*track_ipXY)[ij][itk]) , w);
+      histo_->hist1d_double["sys_log_track_ipXY"]->Fill( TMath::Log10(TMath::Abs((*track_ipXY)[ij][itk])) , w);
+      histo_->hist1d_double["sys_log_track_ipXYSig"]->Fill( TMath::Log10(TMath::Abs((*track_ipXYSig)[ij][itk])) , w);
+      double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/0.01, 2.0) + TMath::Power((*track_ipXYSig)[ij][itk], 2.0);
+      double tk3dsig  = TMath::Sqrt(tk3dsig2);
+      histo_->hist1d_double["sys_track_3dSig"]->Fill(tk3dsig);
     }
   }
-  // Event cut 1
-  // FillEventHistograms(eventnumber, "__EVTCUT1");
-  // Event cut 2
-  // FillEventHistograms(eventnumber, "__EVTCUT2");
-
-  // Fill cut flow histogram for comparison with Sarah's cut flow
-  {
-
-    double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
-    histo_->hist1d["ht4"]->Fill(ht4, w);
-    int nJet = 0;
-    for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
-      nJet++;
-      // if ( TMath::Abs((*jet_eta)[ij]) < 2.0 ) nJet++;
-      // if ( (*jet_nhf)[ij] < 0.99 && (*jet_nef)[ij] < 0.99 && (*jet_cef)[ij] < 0.99 ) nJet++;
-    }
-    int nJetPassingCut = 0;
-    for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
-      if ( SelectJet(ij) ) nJetPassingCut++;
-    }
-    // std::cout << event << "\t" << (*jet_pt)[0] << "\t" << (*jet_pt)[1] << "\t" << (*jet_pt)[2] << "\t" << (*jet_pt)[3] << "\t" << ht4 << std::endl;
-
-    const int nCut = 9;
-    bool cuts[nCut];
-    cuts[0] = true                             ;
-    cuts[1] = nJet >= 4                        ;
-    cuts[2] = cuts[2-1] && ht4 > 1000          ;
-    cuts[3] = cuts[3-1] && (*jet_pt)[0] > 400  ;
-    cuts[4] = cuts[4-1] && (*jet_pt)[1] > 200  ;
-    cuts[5] = cuts[5-1] && (*jet_pt)[2] > 125  ;
-    cuts[6] = cuts[6-1] && (*jet_pt)[3] > 50   ;
-    cuts[7] = cuts[7-1] && nJetPassingCut >= 1 ;
-    cuts[8] = cuts[8-1] && nJetPassingCut >= 2 ;
-    for (int ic = 0; ic < nCut; ic ++) {
-      // if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(ic, w);
-    }
-  }
-
 }
 
 void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
@@ -687,6 +684,8 @@ double EmJetHistoMaker::CalculateEventWeight(long eventnumber)
     // double pileup_lumi_weight = LumiWeights_->weight(nTrueInt);
     // weight *= pileup_lumi_weight;
   }
+  // Skip weighting for now
+  weight = 1.0;
   return weight;
 }
 
@@ -707,7 +706,7 @@ double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
 
   //Loop over members of a given PDF set and get the mean
   float mean = 0;
-  for(int ii=1; ii < nWeights; ++ii){
+  for(int ii=1; ii <= nWeights; ++ii){
     auto pdf = PdfMembers_[ii];
     const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
     const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
@@ -722,7 +721,7 @@ double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
 
   // loop again for the rms
   float rmssq = 0;
-  for(int ii=1; ii < nWeights; ++ii){
+  for(int ii=1; ii <= nWeights; ++ii){
     auto pdf = PdfMembers_[ii];
     const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
     const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
@@ -731,9 +730,39 @@ double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
   }
   rmssq		/= float((nWeights - 1));
 
+  if (mean == 0) {
+    OUTPUT("Central weight is zero!");
+    OUTPUT(id1);
+    OUTPUT(id2);
+    OUTPUT(x1);
+    OUTPUT(x2);
+    OUTPUT(nWeights);
+    // If central weight is zero, return zero shift, so we don't fill histograms with non-sensical weights
+    // OUTPUT(rmssq);
+    // OUTPUT(mean);
+    return 0;
+  }
   float rms = TMath::Sqrt(rmssq);
   float shift = TMath::Abs(rms/mean);
   // OUTPUT(shift);
+  if (shift > 1) {
+    OUTPUT("shift > 1");
+    OUTPUT(id1);
+    OUTPUT(id2);
+    OUTPUT(x1);
+    OUTPUT(x2);
+    OUTPUT(nWeights);
+    OUTPUT(rms);
+    OUTPUT(mean);
+    for(int ii=1; ii < nWeights; ++ii){
+      auto pdf = PdfMembers_[ii];
+      const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
+      const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
+      double weight = xpdf1_new * xpdf2_new;
+      // OUTPUT(ii);
+      // OUTPUT(weight);
+    }
+  }
   return shift;
 }
 
@@ -970,11 +999,10 @@ double EmJetHistoMaker::GetMedianIP(int ij)
     if ( ( (*track_quality)[ij][itk] & 4 ) == 0 ) continue; // Only process tracks with "highPurity" quality
     vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
   }
-  
   std::sort(vector_ipXY.begin(), vector_ipXY.end());
   int nTrack = vector_ipXY.size();
   if ( nTrack>0 ) {
-    if ( nTrack%2 ==0 )	
+    if ( nTrack%2 ==0 )
       medip = (vector_ipXY[nTrack/2 - 1] + vector_ipXY[nTrack/2]) / 2;
     else
       medip = (vector_ipXY[nTrack/2]);

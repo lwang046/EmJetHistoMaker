@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 
       // Calculate total number of events in sample
       long eventCount = 0;
-      long eventCountProcessed = 0;
+      long eventCountPreTrigger = 0;
       if (!sample.isData) {
         std::cout << "--------------------------------\n";
         std::cout << "Calculating event count in files" << std::endl;
@@ -155,8 +155,9 @@ int main(int argc, char *argv[])
         hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+labelstring+"-"+std::to_string(irun)+".root");
         int histstatus = hm.VerifyHistograms();
         hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
-        eventCountProcessed = hm.LoopOverCurrentTree();
-        hm.FillEventCount(eventCount, eventCountProcessed);
+        eventCountPreTrigger = hm.LoopOverCurrentTree(); // Returns sum of eventCountPreTrigger histogram integrals
+        hm.FillEventCount(eventCountPreTrigger);
+        OUTPUT("WriteHistograms");
         hm.WriteHistograms();
       }
     }
