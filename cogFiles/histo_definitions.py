@@ -55,6 +55,7 @@ def user_define_histos():
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'nEmerging'                 ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
+    name = 'pileup_nVtx'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 100  ) );
     name = 'nVtx'                      ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 100  ) );
     name = 'ht'                        ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
     name = 'ht4'                       ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
@@ -110,6 +111,8 @@ def user_define_histos():
     name = 'sys_log_track_ipXY'        ; histo_dict[name] = Histo1D(name , Bins(2000, -8. , 2.   ) )
     name = 'sys_log_track_ipXYSig'     ; histo_dict[name] = Histo1D(name , Bins(2000, -5. , 5.   ) )
     name = 'sys_track_3dSig'           ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 19.  ) )
+    name = 'systest_log_track_ipXY'    ; histo_dict[name] = Histo1F(name , Bins(2000, -8. , 2.   ) )
+    name = 'systest_track_3dSig'       ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 19.  ) )
     name = 'test_jet_medianIP'         ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'test_jet_medianAbsIP'      ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'track_pt'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
@@ -206,10 +209,16 @@ def user_define_histos():
     # Systematic variations
     histo_clone_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
-        if name=='cutflow':
+        if name.startswith('cutflow') or name.startswith('test'):
             histo_clone = clone_object(histo, postfix='PdfUp')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='PdfDn')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name.startswith('cutflow') or name.startswith('test'):
+            histo_clone = clone_object(histo, postfix='ModelingUp')
             histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
 

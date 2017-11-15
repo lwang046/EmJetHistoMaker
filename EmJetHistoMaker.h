@@ -51,8 +51,9 @@ class EmJetHistoMaker : public HistoMakerBase
   void InitHistograms();
   void FillEventCount (long eventCountPreTrigger);
   void FillHistograms    (long eventnumber);
-  void FillCutflowHistograms (long eventnumber);
+  void FillCutflowHistograms (long eventnumber, string tag);
   void FillSystematicHistograms (long eventnumber);
+  void FillSystematicTestingHistograms (long eventnumber);
   void FillEventHistograms  (long eventnumber, string tag);
   void FillJetHistograms    (long eventnumber, int ij, string tag);
   void FillTrackHistograms  (long eventnumber, int ij, int itk, string tag);
@@ -83,6 +84,7 @@ class EmJetHistoMaker : public HistoMakerBase
   bool PartonJetMatching(int ij, int igp);
  private:
   double CalculateEventWeight(long eventnumber);
+  double CalculatePileupWeight(long eventnumber);
   double CalculatePdfShift(long eventnumber); // direction: 0 = no shift, +1 = shifted up, -1 = shifted down
   bool SelectJet(int jet_index);
   bool SelectJet_basic(int jet_index);
@@ -95,6 +97,7 @@ class EmJetHistoMaker : public HistoMakerBase
   unique_ptr<Histos> histo_;
   unique_ptr<TH1F> histo_nTrueInt_;
   unique_ptr<TH1F> histo_eventCountPreTrigger_;
+  EmJetSystematics sys_; // Class used for systematic uncertainty calculations
   Sample sample_;
   bool isData_;
   double xsec_;
@@ -147,18 +150,26 @@ EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
   TRACKSOURCE = 0;
   // InitLumiReweighting();
   if (!isData_) {
-    // InitPdfSet("NNPDF30_lo_as_0130");
-    InitPdfSet("CT14nlo");
+    InitPdfSet("NNPDF23_lo_as_0119_qed");
+    // InitPdfSet("NNPDF30_lo_as_0118");
+    // InitPdfSet("CT14nlo");
+    // InitPdfSet("PDF4LHC15_nlo_mc");
+    // InitPdfSet("MMHT2014lo68cl");
   }
 }
 
 void EmJetHistoMaker::InitLumiReweighting()
 {
   // Initialize lumi reweighting utility
-  std::string mcFile   = "~/www/2016-03-23/pileup_mc_2015_25ns_Startup_PoissonOOTPU.root";
-  std::string dataFile = "~/www/2016-03-21/pileup-DataSkim-20160302.root";
-  std::string mcHist   = "nTrueInt";
-  std::string dataHist = "pileup";
+  // std::string mcFile   = "/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-QCD.root";
+  // std::string mcFile   = "/data/users/yhshin/datajsonfiles_received/Analysis-20171103-v0/pileup_Analysis-20171103-v0_20171109_BF.root";
+  // std::string dataFile = "/data/users/yhshin/datajsonfiles_received/Analysis-20171103-v0/pileup_Analysis-20171103-v0_20171109_GH.root";
+  std::string mcFile   = "/data/users/yhshin/datajsonfiles_received/Analysis-20171103-v0/pileup_Analysis-20171103-v0_20171109_BF.root";
+  std::string dataFile = "/data/users/yhshin/datajsonfiles_received/Analysis-20171103-v0/pileup_Analysis-20171103-v0_20171109_GH.root";
+  // std::string mcHist   = "nTrueInt";
+  // std::string dataHist = "pileup";
+  std::string mcHist   = "pileup_nVtx";
+  std::string dataHist = "pileup_nVtx";
   LumiWeights_ = unique_ptr<reweight::LumiReWeighting>(new reweight::LumiReWeighting(mcFile, dataFile, mcHist, dataHist));
 }
 
@@ -276,9 +287,10 @@ int EmJetHistoMaker::GetEventCount(string ihistname)
 
 void EmJetHistoMaker::InitHistograms()
 {
-  EmJetSystematics sys;
-  sys.SetFilenames("/home/yhshin/data/condor_output/2017-11-04/histos-sys1/histo-JetHT_G1.root", "/home/yhshin/data/condor_output/2017-11-04/histos-sys1/histo-QCD.root");
-  OUTPUT(sys.CalculateIpXYShift());
+  // Initialize Systematic caculations
+  // sys_.SetTesting(1);
+  sys_.SetFilenames("/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-JetHT_G1.root", "/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-QCD.root");
+  OUTPUT(sys_.CalculateIpXYShift());
 
   TH1::SetDefaultSumw2();
   histo_nTrueInt_ = unique_ptr<TH1F>(new TH1F("nTrueInt", "nTrueInt", 100, 0., 100.));
@@ -314,11 +326,15 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
 
   // FillEventHistograms(eventnumber, "");
 
-  FillCutflowHistograms(eventnumber);
+  FillCutflowHistograms(eventnumber, "");
+  sys_.SetDirectionModeling(1);
+  FillCutflowHistograms(eventnumber, "__ModelingUp");
+  sys_.SetDirectionModeling(0);
   FillSystematicHistograms(eventnumber);
+  FillSystematicTestingHistograms(eventnumber);
 }
 
-void EmJetHistoMaker::FillCutflowHistograms (long eventnumber)
+void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
 {
   double w = CalculateEventWeight(eventnumber);
   if (debug==1) std::cout << "Entering FillCutflowHistograms" << std::endl;
@@ -340,66 +356,66 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber)
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) && SelectJet_ipCut(ij) ) nEmerging++;
   }
   double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
-    // Find basic jets
-    vector<int> ijs_basic;
-    for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
-      if ( SelectJet_basic(ij) && SelectJet_nonpu(ij) ) {
-        ijs_basic.push_back(ij);
+  // Find basic jets
+  vector<int> ijs_basic;
+  for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
+    if ( SelectJet_basic(ij) && SelectJet_nonpu(ij) ) {
+      ijs_basic.push_back(ij);
+    }
+    if ( ijs_basic.size() == 4 ) break;
+  }
+  // Find emerging jets
+  vector<int> ijs_emerging;
+  for (unsigned ij = 0; ij < std::min( int(jet_pt->size()), 4 ); ij++) {
+    if ( SelectJet_basic(ij) && SelectJet_nonpu(ij) && SelectJet_emerging(ij) ) {
+      ijs_emerging.push_back(ij);
+    }
+  }
+  const int nCut = 14;
+  bool cuts[nCut]; string labels[nCut];
+  int i=0;
+  cuts[0] = true                                  ; labels[0]=( "nocut                    ") ; i++ ;
+  cuts[i] = cuts[i-1] && HLT_PFHT800 == 1         ; labels[i]=( "HLT_PFHT800 == 1         ") ; i++ ;
+  cuts[i] = cuts[i-1] && jet_pt->size()>=4        ; labels[i]=( "jet_pt->size()>=4        ") ; i++ ;
+  cuts[i] = cuts[i-1] && ht4 > 1000               ; labels[i]=( "ht4 > 1000               ") ; i++ ;
+  cuts[i] = cuts[i-1] && (*pv_index)[0] == 0      ; labels[i]=( "(*pv_index)[0] == 0      ") ; i++ ;
+  cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0   ; labels[i]=( "abs((*pv_z)[0]) < 15.0   ") ; i++ ;
+  cuts[i] = cuts[i-1] && ijs_basic.size() == 4    ; labels[i]=( "ijs_basic.size() == 4    ") ; i++ ;
+  cuts[i] = cuts[i-1] && ijs_basic.back() == 3    ; labels[i]=( "ijs_basic.back() == 3    ") ; i++ ;
+  cuts[i] = cuts[i-1] && (*jet_pt)[0] > 300       ; labels[i]=( "(*jet_pt)[0] > 300       ") ; i++ ;
+  cuts[i] = cuts[i-1] && (*jet_pt)[1] > 300       ; labels[i]=( "(*jet_pt)[1] > 300       ") ; i++ ;
+  cuts[i] = cuts[i-1] && (*jet_pt)[2] > 200       ; labels[i]=( "(*jet_pt)[2] > 200       ") ; i++ ;
+  cuts[i] = cuts[i-1] && (*jet_pt)[3] > 150       ; labels[i]=( "(*jet_pt)[3] > 150       ") ; i++ ;
+  cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1 ; labels[i]=( "ijs_emerging.size() >= 1 ") ; i++ ;
+  cuts[i] = cuts[i-1] && ijs_emerging.size() >= 2 ; labels[i]=( "ijs_emerging.size() >= 2 ") ; i++ ;
+  for (int ic = 0; ic < nCut; ic ++) {
+    if (isData_) {
+      if ( cuts[ic] ) histo_->hist1d["cutflow"+tag]->Fill(labels[ic].c_str(), 1);
+    }
+    else {
+      if ( cuts[ic] ) histo_->hist1d["cutflow"+tag]->Fill(labels[ic].c_str(), w);
+      if ( cuts[ic] ) histo_->hist1d["cutflow__PdfUp"+tag]->Fill(labels[ic].c_str(), w*(1+pdfshift));
+      if ( cuts[ic] ) histo_->hist1d["cutflow__PdfDn"+tag]->Fill(labels[ic].c_str(), w*(1-pdfshift));
+    }
+  }
+  if (cuts[11]) {
+    for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+      if (ij>=4) break; // :JETCUT:
+      if (SelectJet_basic(ij)) {
+        histo_->hist1d["test_jet_medianIP"+tag]->Fill(GetMedianIP(ij) , w);
+        histo_->hist1d["test_jet_medianAbsIP"+tag]->Fill(GetfabsMedianIP(ij) , w);
       }
-      if ( ijs_basic.size() == 4 ) break;
     }
-    // Find emerging jets
-    vector<int> ijs_emerging;
-    for (unsigned ij = 0; ij < std::min( int(jet_pt->size()), 4 ); ij++) {
-      if ( SelectJet_basic(ij) && SelectJet_nonpu(ij) && SelectJet_emerging(ij) ) {
-        ijs_emerging.push_back(ij);
-      }
-    }
-    const int nCut = 14;
-    bool cuts[nCut]; string labels[nCut];
-    int i=0;
-    cuts[0] = true                                  ; labels[0]=( "nocut                    ") ; i++ ;
-    cuts[i] = cuts[i-1] && HLT_PFHT800 == 1         ; labels[i]=( "HLT_PFHT800 == 1         ") ; i++ ;
-    cuts[i] = cuts[i-1] && jet_pt->size()>=4        ; labels[i]=( "jet_pt->size()>=4        ") ; i++ ;
-    cuts[i] = cuts[i-1] && ht4 > 1000               ; labels[i]=( "ht4 > 1000               ") ; i++ ;
-    cuts[i] = cuts[i-1] && (*pv_index)[0] == 0      ; labels[i]=( "(*pv_index)[0] == 0      ") ; i++ ;
-    cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0   ; labels[i]=( "abs((*pv_z)[0]) < 15.0   ") ; i++ ;
-    cuts[i] = cuts[i-1] && ijs_basic.size() == 4    ; labels[i]=( "ijs_basic.size() == 4    ") ; i++ ;
-    cuts[i] = cuts[i-1] && ijs_basic.back() == 3    ; labels[i]=( "ijs_basic.back() == 3    ") ; i++ ;
-    cuts[i] = cuts[i-1] && (*jet_pt)[0] > 300       ; labels[i]=( "(*jet_pt)[0] > 300       ") ; i++ ;
-    cuts[i] = cuts[i-1] && (*jet_pt)[1] > 300       ; labels[i]=( "(*jet_pt)[1] > 300       ") ; i++ ;
-    cuts[i] = cuts[i-1] && (*jet_pt)[2] > 200       ; labels[i]=( "(*jet_pt)[2] > 200       ") ; i++ ;
-    cuts[i] = cuts[i-1] && (*jet_pt)[3] > 150       ; labels[i]=( "(*jet_pt)[3] > 150       ") ; i++ ;
-    cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1 ; labels[i]=( "ijs_emerging.size() >= 1 ") ; i++ ;
-    cuts[i] = cuts[i-1] && ijs_emerging.size() >= 2 ; labels[i]=( "ijs_emerging.size() >= 2 ") ; i++ ;
-    for (int ic = 0; ic < nCut; ic ++) {
-      if (isData_) {
-        if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), 1);
-      }
-      else {
-        if ( cuts[ic] ) histo_->hist1d["cutflow"]->Fill(labels[ic].c_str(), w);
-        if ( cuts[ic] ) histo_->hist1d["cutflow__PdfUp"]->Fill(labels[ic].c_str(), w*(1+pdfshift));
-        if ( cuts[ic] ) histo_->hist1d["cutflow__PdfDn"]->Fill(labels[ic].c_str(), w*(1-pdfshift));
-      }
-    }
-    if (cuts[11]) {
-      for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
-        if (ij>=4) break; // :JETCUT:
-        if (SelectJet_basic(ij)) {
-          histo_->hist1d["test_jet_medianIP"]->Fill(GetMedianIP(ij) , w);
-          histo_->hist1d["test_jet_medianAbsIP"]->Fill(GetfabsMedianIP(ij) , w);
-        }
-      }
-    }
-    if (cuts[6]) {
-      // FillEventHistograms(eventnumber, "__EVTkinematic");
-    }
-    if (cuts[7]) {
-      // FillEventHistograms(eventnumber, "__EVTpvpass");
-    }
-    if (cuts[nCut-1]) {
-      // FillEventHistograms(eventnumber, "__EVTallpass");
-    }
+  }
+  if (cuts[6]) {
+    // FillEventHistograms(eventnumber, "__EVTkinematic");
+  }
+  if (cuts[7]) {
+    // FillEventHistograms(eventnumber, "__EVTpvpass");
+  }
+  if (cuts[nCut-1]) {
+    // FillEventHistograms(eventnumber, "__EVTallpass");
+  }
 }
 
 void EmJetHistoMaker::FillSystematicHistograms (long eventnumber)
@@ -420,6 +436,27 @@ void EmJetHistoMaker::FillSystematicHistograms (long eventnumber)
       histo_->hist1d_double["sys_track_3dSig"]->Fill(tk3dsig);
     }
   }
+}
+
+void EmJetHistoMaker::FillSystematicTestingHistograms (long eventnumber)
+{
+  double w = CalculateEventWeight(eventnumber);
+  sys_.SetDirectionModeling(1);
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
+      if( (*track_source)[ij][itk]!=0 ) continue;
+      if ( ( (*track_quality)[ij][itk] & 4 ) == 0 ) continue; // Only process tracks with "highPurity" quality
+      double shifted_tk_ipXY = sys_.GetShiftedIpXY( (*track_ipXY)[ij][itk] ) ;
+      // OUTPUT( (*track_ipXY)[ij][itk] );
+      // OUTPUT(shifted_tk_ipXY);
+      histo_->hist1d["systest_log_track_ipXY"]->Fill( TMath::Log10(TMath::Abs(shifted_tk_ipXY) ) , w);
+      double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/0.01, 2.0) + TMath::Power((*track_ipXYSig)[ij][itk], 2.0);
+      double tk3dsig  = TMath::Sqrt(tk3dsig2);
+      double shifted_tk3dsig = sys_.GetShifted3dSig(tk3dsig);
+      histo_->hist1d_double["systest_track_3dSig"]->Fill(shifted_tk3dsig);
+    }
+  }
+  sys_.SetDirectionModeling(0);
 }
 
 void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
@@ -646,8 +683,9 @@ void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, str
 
 void EmJetHistoMaker::FillPileupHistograms(long eventnumber, string tag)
 {
-  double weight = CalculateEventWeight(eventnumber);
-  histo_nTrueInt_->Fill(nTrueInt, weight);
+  double w = CalculateEventWeight(eventnumber);
+  histo_nTrueInt_->Fill(nTrueInt, w);
+  histo_->hist1d["pileup_nVtx"]->Fill(nVtx, w);
 }
 
 void EmJetHistoMaker::FillHltHistograms(long eventnumber)
@@ -687,6 +725,12 @@ double EmJetHistoMaker::CalculateEventWeight(long eventnumber)
   // Skip weighting for now
   weight = 1.0;
   return weight;
+}
+
+double EmJetHistoMaker::CalculatePileupWeight(long eventnumber)
+{
+  double pileup_lumi_weight = LumiWeights_->weight(nVtx);
+  return pileup_lumi_weight;
 }
 
 double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
@@ -729,6 +773,14 @@ double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
     rmssq += (weight - mean)*(weight - mean);
   }
   rmssq		/= float((nWeights - 1));
+  TH1F* hist = new TH1F("pdf_weights", "pdf_weights", 100, 0, 5);
+  for(int ii=1; ii <= nWeights; ++ii){
+    auto pdf = PdfMembers_[ii];
+    const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
+    const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
+    double weight = xpdf1_new * xpdf2_new;
+    hist->Fill(weight/mean);
+  }
 
   if (mean == 0) {
     OUTPUT("Central weight is zero!");
@@ -745,24 +797,26 @@ double EmJetHistoMaker::CalculatePdfShift(long eventnumber)
   float rms = TMath::Sqrt(rmssq);
   float shift = TMath::Abs(rms/mean);
   // OUTPUT(shift);
-  if (shift > 1) {
-    OUTPUT("shift > 1");
-    OUTPUT(id1);
-    OUTPUT(id2);
-    OUTPUT(x1);
-    OUTPUT(x2);
-    OUTPUT(nWeights);
-    OUTPUT(rms);
-    OUTPUT(mean);
-    for(int ii=1; ii < nWeights; ++ii){
-      auto pdf = PdfMembers_[ii];
-      const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
-      const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
-      double weight = xpdf1_new * xpdf2_new;
-      // OUTPUT(ii);
-      // OUTPUT(weight);
-    }
-  }
+  static int first = 1;
+  // if (shift > 1 && first == 1) {
+  //   OUTPUT("shift > 1");
+  //   OUTPUT(id1);
+  //   OUTPUT(id2);
+  //   OUTPUT(x1);
+  //   OUTPUT(x2);
+  //   OUTPUT(nWeights);
+  //   OUTPUT(rms);
+  //   OUTPUT(mean);
+  //   for(int ii=1; ii <= nWeights; ++ii){
+  //     auto pdf = PdfMembers_[ii];
+  //     const double xpdf1_new = pdf->xfxQ(id1, x1, Q);
+  //     const double xpdf2_new = pdf->xfxQ(id2, x2, Q);
+  //     double weight = xpdf1_new * xpdf2_new;
+  //     // OUTPUT(ii);
+  //     // OUTPUT(weight);
+  //   }
+  //   // first = 0;
+  // }
   return shift;
 }
 
@@ -1017,7 +1071,8 @@ double EmJetHistoMaker::GetfabsMedianIP(int ij)
   for (unsigned itk=0; itk<(*track_pt)[ij].size(); itk++) {
     if( (*track_source)[ij][itk]!=0 ) continue;
     if ( ( (*track_quality)[ij][itk] & 4 ) == 0 ) continue; // Only process tracks with "highPurity" quality
-    vector_ipXY.push_back( fabs((*track_ipXY)[ij][itk]) );
+    double tk_ipXY = sys_.GetShiftedIpXY((*track_ipXY)[ij][itk]) ;
+    vector_ipXY.push_back( fabs(tk_ipXY) );
   }
 
   std::sort(vector_ipXY.begin(), vector_ipXY.end());

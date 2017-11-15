@@ -1,3 +1,5 @@
+#include "TextFileProcessing.h"
+
 #include <string> // string, stof
 #include <vector> // vector
 #include <iostream> // cout
@@ -19,6 +21,7 @@ class EmJetSample
   float xsec; // Cross section in pb
   vector<string> files; // List of files to run over
 };
+
 void PrintSample(EmJetSample sample)
 {
   std::cout << sample.group << ", " << sample.name << ", " << sample.type << ", " << sample.isData << ", " << sample.isSignal << ", " << sample.xsec << std::endl;
@@ -29,10 +32,7 @@ void PrintSample(EmJetSample sample)
 }
 
 void ReadSamplesFromConfigFile(string configFileName, vector<EmJetSample>& samples);
-void FileToLines(string ifileName, vector<string>& result);
-void LineToFields(string iline, vector<string>& result);
 void FieldsToSample(const vector<string>& ifields, EmJetSample& sample);
-void removeSpaces(string& input);
 
 
 void
@@ -60,45 +60,6 @@ ReadSamplesFromConfigFile(string configFileName, vector<EmJetSample>& samples)
       samples.push_back(sample);
       // PrintSample(sample);
     }
-  }
-}
-
-// Convert input file to vector of lines
-void
-FileToLines(string ifileName, vector<string>& result)
-{
-  std::ifstream lineStream(ifileName);
-  string line;
-  while(getline(lineStream,line)) {
-    result.push_back(line);
-  }
-  return;
-}
-
-// Covert input line to a vector of fields
-void
-LineToFields(string iline, vector<string>& result)
-{
-  if (iline.size()==0) {
-    return; // Ignore empty lines
-  }
-  if (iline[0]=='#') {
-    // std::cout << "Ignoring comment line" << std::endl;
-    return; // Ignore lines that start with '#', return empty vector
-  }
-
-  // std::cout << "iline: " << iline << std::endl;
-  removeSpaces(iline); // Remove spaces
-  // std::cout << "iline after space removal: " << iline << std::endl;
-  std::stringstream iss(iline);
-  string field;
-  // Read result separated by comma
-  while (getline(iss, field, ',')) {
-    result.push_back(field);
-  }
-  // This checks for a trailing comma with no data after it.
-  if (!iss && field.empty()) {
-    result.push_back(""); // If there was a trailing comma then add an empty element.
   }
 }
 
@@ -137,10 +98,5 @@ FieldsToSample(const vector<string>& ifields, EmJetSample& sample)
   else {
     std::cerr << "Invalid input file" << std::endl;
   }
-}
-
-void removeSpaces(string& input)
-{
-  input.erase(std::remove(input.begin(),input.end(),' '),input.end());
 }
 

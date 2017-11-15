@@ -1,5 +1,6 @@
 #include "EmJetHistoMaker.h"
 #include "EmJetFiles.h"
+#include "EmJetCut.h"
 // #include "EmJetSample.h"
 #include "tclap/CmdLine.h"
 
@@ -77,6 +78,13 @@ int main(int argc, char *argv[])
   // else {
   //   cerr << "Output file name must contain * character!\n";
   // }
+
+  // Cut testing
+  {
+    EmJetCut cut;
+    ReadCutFromFile("cuts/cutsample.txt", cut);
+    PrintCut(cut);
+  }
 
   // Main body of program
   {

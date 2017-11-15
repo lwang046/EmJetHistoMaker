@@ -92,7 +92,7 @@ long HistoMakerBase::LoopOverCurrentTree()
     // Fill histograms
     FillHistograms(jentry);
   }
-  std::cout << "Total number of processed events is : "<< eventCount << std::endl;
+  std::cout << "Total number of processed events is: "<< eventCount << std::endl;
   double total_time_elapsed = timer_total_.RealTime();
   std::cout << "Total processing time (s): " << total_time_elapsed << std::endl;
   std::cout << std::endl;
@@ -108,6 +108,7 @@ void HistoMakerBase::OpenOutputFile(string ofilename)
 void HistoMakerBase::WriteHistograms()
 {
   ofile_->Write();
+  std::cout << "Wrote to file:\n" << ofile_->GetName() << std::endl;
 }
 
 HistoMakerBase::~HistoMakerBase()

@@ -21,7 +21,20 @@ samplesets['QCD'] = [
 ]
 
 # samplesets['ModelA'] = [( 'ModelA', 14.6 )]
-samplesets['Data']   = [( 'JetHT_G1', 1.0 )]
+
+samplesets['DataBF']   = [
+    ( 'JetHT_B3', 1.0 ),
+    ( 'JetHT_C1', 1.0 ),
+    ( 'JetHT_D1', 1.0 ),
+    ( 'JetHT_E1', 1.0 ),
+    ( 'JetHT_F1', 1.0 ),
+]
+
+samplesets['DataGH']   = [
+    ( 'JetHT_G1', 1.0 ),
+    ( 'JetHT_H2', 1.0 ),
+    ( 'JetHT_H3', 1.0 ),
+]
 
 # hdirc = OrderedDict()
 
