@@ -17,8 +17,8 @@ using std::endl;
 
 int main(int argc, char *argv[])
 {
-	try {
-	// Define the command line object.
+  try {
+  // Define the command line object.
 	CmdLine cmd("Run EmJetHistoMaker", ' ', "0.9");
 
 	// Define value arguments and add to the command line.
@@ -36,6 +36,12 @@ int main(int argc, char *argv[])
 
 	ValueArg<string> sampleArg("s","sample","Name of sample to run over. Unspecified: Run over all.",false,"","string");
 	cmd.add( sampleArg );
+
+	ValueArg<string> cutConfigArg("t","cutConfig","Cut config file name. A text file specifying all the cut sets separated by commas.",false,"cuts/cuts.txt","string");
+	cmd.add( cutConfigArg );
+
+	ValueArg<string> cutArg("u","cut","Cut name. The cut set to run over, among those specified in the cut config file.",false,"","string");
+	cmd.add( cutArg );
 
 	ValueArg<int> numberOfFilesArg("n","number","Number of files per run to process.",false,1,"int");
 	cmd.add( numberOfFilesArg );
@@ -63,31 +69,35 @@ int main(int argc, char *argv[])
 	string labelstring("");
   if (ilabel!="") labelstring = string("-") + ilabel; // If label specified, set labelstring
 	string isample    = sampleArg.getValue(); // Run over all if ""
+	string icutConfig = cutConfigArg.getValue();
+	string icut       = cutArg.getValue();
   int inumberOfFiles = numberOfFilesArg.getValue(); // Run over all if -1
   // vector<int> iinputFileIndex = inputFileIndexArg.getValue(); // Run over all if empty
   int irun = runArg.getValue();
-	// bool ipileupOnly = pileupOnlySwitch.getValue();
-
-  // // Calculate parameters from command line arguments
-  // string prefix, postfix;
-  // std::string::size_type pos = ioutput.find('*');
-  // if (pos != std::string::npos) {
-  //     prefix = ioutput.substr(0, pos);
-  //     postfix = ioutput.substr(pos+1);
-  // }
-  // else {
-  //   cerr << "Output file name must contain * character!\n";
-  // }
-
-  // Cut testing
-  {
-    EmJetCut cut;
-    ReadCutFromFile("cuts/cutsample.txt", cut);
-    PrintCut(cut);
-  }
 
   // Main body of program
   {
+    // Find cut from cut config file
+    EmJetCut cutToRun;
+    {
+      vector<EmJetCut> cuts;
+      bool foundCut = false;
+      ReadCutsFromFile(icutConfig, cuts);
+      for (cut: cuts) {
+        if (cut.name == icut) {
+          std::cout << icut << " found in cut config\n";
+          PrintCut(cut);
+          cutToRun = cut;
+          foundCut = true;
+          break;
+        }
+      }
+      if (!foundCut) {
+        std::cerr << "Error! Cut " << icut << " not found\n";
+        return 1;
+      }
+    }
+
     vector<EmJetSample> ejsamples, ejsamples_singlesample;
     ReadSamplesFromConfigFile(iconfig, ejsamples);
     std::cout << "Number of samples read: " << ejsamples.size() << std::endl;
@@ -163,6 +173,7 @@ int main(int argc, char *argv[])
         hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+labelstring+"-"+std::to_string(irun)+".root");
         int histstatus = hm.VerifyHistograms();
         hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
+        hm.SetCut(cutToRun);
         eventCountPreTrigger = hm.LoopOverCurrentTree(); // Returns sum of eventCountPreTrigger histogram integrals
         hm.FillEventCount(eventCountPreTrigger);
         OUTPUT("WriteHistograms");
@@ -172,152 +183,7 @@ int main(int argc, char *argv[])
     std::cout << "--------------------------------\n";
   }
 
-
-  /*
-  // Main body of program
-  int runOverSpecifiedIndividualFiles = 0;
-  if (runOverSpecifiedIndividualFiles)
-  {
-    vector<EmJetSample> ejsamples, ejsamples_singlesample;
-    ReadSamplesFromConfigFile(iconfig, ejsamples);
-    std::cout << "Number of samples read: " << ejsamples.size() << std::endl;
-    // If input sample is specified, only run over the specified sample
-    if (isample != "") {
-      std::cout << "Sample specified in command line: " << isample << std::endl;
-      for (unsigned i=0; i<ejsamples.size(); i++) {
-        auto sample=ejsamples[i];
-        if (sample.name==isample) {
-          std::cout << "Found matching sample in config file " << std::endl;
-          ejsamples_singlesample.push_back(sample);
-          PrintSample(sample);
-        }
-      }
-      ejsamples = ejsamples_singlesample;
-    } // ejsamples now contains all the samples to run over
-    for (EmJetSample sample : ejsamples) {
-      std::cout << "--------------------------------\n";
-      std::cout << "--------------------------------\n";
-      std::cout << "Running over sample: " << sample.name << std::endl;
-      string sampledir = ioutputDir + "/" + sample.name + labelstring;
-      std::cout << "Creating directory: " << sampledir << std::endl;
-      string mkdir_command = "mkdir -p " + sampledir;
-      system(mkdir_command.c_str());
-      // if (iinputFileIndex.empty()) { // Run over all files if file index unspecified
-      //   for ( unsigned ifile=0; ifile < sample.files.size(); ifile++ ) iinputFileIndex.push_back(ifile);
-      // }
-      long eventCount = 0;
-      if (!sample.isData) {
-        for (int ifile : iinputFileIndex) {
-          if (unsigned(ifile) >= sample.files.size()) break;
-          std::cout << "--------------------------------\n";
-          std::cout << "Calculating total event count: " << ifile << std::endl;
-          EmJetHistoMaker hm(sample.files[ifile]);
-          hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+labelstring+"-"+std::to_string(ifile)+".root");
-          hm.SetOptions(Sample::SIGNAL, sample.isData, 1., eventCount, true, false);
-          eventCount += hm.GetEventCount("eventCountPreTrigger");
-        }
-      }
-      for (int ifile : iinputFileIndex) {
-        if (unsigned(ifile) >= sample.files.size()) break;
-        std::cout << "--------------------------------\n";
-        std::cout << "Running over file: " << ifile << std::endl;
-        EmJetHistoMaker hm(sample.files[ifile]);
-        // Output file name: OUTPUTDIR/histo-SAMPLEGROUP_SAMPLENAME-LABEL-FILEINDEX.root
-        std::cout << "Opening output file" << std::endl;
-        hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"_"+sample.name+labelstring+"-"+std::to_string(ifile)+".root");
-        std::cout << "Opened output file" << std::endl;
-        // int status = hm.SetTree(sample.files[ifile]);
-        // hm.SetOptions(Sample::WJET, true, 1., 1., false, false);
-        hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
-        // if (status==0) hm.LoopOverCurrentTree();
-        // else { std::cout << "Error! Skipping file\n"; }
-        hm.LoopOverCurrentTree();
-        if (!sample.isData) {
-          hm.GetEventCountHistAndClone("eventCountPreTrigger");
-        }
-        hm.WriteHistograms();
-      }
-      std::cout << "--------------------------------\n";
-    }
-  }
-  */
-
   } catch (ArgException &e) {
     cerr << "error: " << e.error() << " for arg " << e.argId() << endl;
-  }
-  if (0)
-  {
-    bool pileupOnly = false;
-    // Specify any option to turn on pileup only
-    if (argc>1) pileupOnly = true;
-
-    std::string prefix = "~/www/2017-01-23/histo-";
-    std::string postfix = "-small.root";
-    if (pileupOnly) postfix = "_pileupOnly" + postfix;
-    for (std::string sample: samples) {
-      EmJetHistoMaker hm;
-      hm.VERTEXSOURCE = 1;
-      std::cout << "Running over sample: " << sample << std::endl;
-      auto sample_files = files.equal_range(sample);
-      std::cout << "Number of files: " << files.count(sample) << std::endl;
-      hm.OpenOutputFile(prefix+sample+postfix);
-      for (auto sample_file_pair = sample_files.first; sample_file_pair != sample_files.second; ++sample_file_pair) {
-        auto file = sample_file_pair->second;
-        std::string filename = file.name;
-        int status = hm.SetTree(filename);
-        hm.SetOptions(file.sample, file.isData, file.xsec, file.efficiency, file.isSignal, pileupOnly);
-        // hm.SetMaxEntries(50000);
-        // hm.SetMaxEntries(100);
-        if (status==0) {
-          std::cout << "Running over file: " << filename << std::endl;
-          hm.LoopOverCurrentTree();
-        }
-        else { std::cout << "Error! Skipping file: " << filename << std::endl; }
-      }
-      hm.WriteHistograms();
-      // int status = hm.Open(file.name, file.sample, file.isData, file.xsec, file.efficiency, file.isSignal);
-      // if (status==0) {
-      //   // If successfully initialized
-      //   hm.Loop(prefix + label + postfix);
-      // }
-      // else std::cout << "Error! Skipping file: " << file.name << std::endl;
-    }
-  }
-  if (0)
-  {
-    bool pileupOnly = false;
-    // Specify any option to turn on pileup only
-    if (argc>1) pileupOnly = true;
-
-    std::string prefix = "~/www/2016-10-14/histo-";
-    std::string postfix = "-alltracks.root";
-    if (pileupOnly) postfix = "_pileupOnly" + postfix;
-    for (std::string sample: samples) {
-      EmJetHistoMaker hm;
-      hm.VERTEXSOURCE = 2;
-      std::cout << "Running over sample: " << sample << std::endl;
-      auto sample_files = files.equal_range(sample);
-      std::cout << "Number of files: " << files.count(sample) << std::endl;
-      hm.OpenOutputFile(prefix+sample+postfix);
-      for (auto sample_file_pair = sample_files.first; sample_file_pair != sample_files.second; ++sample_file_pair) {
-        auto file = sample_file_pair->second;
-        std::string filename = file.name;
-        int status = hm.SetTree(filename);
-        hm.SetOptions(file.sample, file.isData, file.xsec, file.efficiency, file.isSignal, pileupOnly);
-        // hm.SetMaxEntries(50000);
-        if (status==0) {
-          std::cout << "Running over file: " << filename << std::endl;
-          hm.LoopOverCurrentTree();
-        }
-        else { std::cout << "Error! Skipping file: " << filename << std::endl; }
-      }
-      hm.WriteHistograms();
-      // int status = hm.Open(file.name, file.sample, file.isData, file.xsec, file.efficiency, file.isSignal);
-      // if (status==0) {
-      //   // If successfully initialized
-      //   hm.Loop(prefix + label + postfix);
-      // }
-      // else std::cout << "Error! Skipping file: " << file.name << std::endl;
-    }
   }
 }
