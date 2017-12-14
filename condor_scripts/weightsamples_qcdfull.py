@@ -13,11 +13,14 @@ os.chdir(args.directory)
 
 samplesets = OrderedDict() # Dictionary of list of tuples. Tuple contains (label, xsec_in_pb)
 samplesets['QCD'] = [
-    ( 'QCD_HT500to700'   ,   32100.00 ), # pb
-    ( 'QCD_HT700to1000'  ,    6831.00 ),
-    ( 'QCD_HT1000to1500' ,    1207.00 ),
-    ( 'QCD_HT1500to2000' ,     119.90 ),
-    ( 'QCD_HT2000toInf'  ,      25.24 ),
+    ( 'QCD_HT100to200'   ,  27990000.00 ), # pb
+    ( 'QCD_HT200to300'   ,   1712000.00 ), # pb
+    ( 'QCD_HT300to500'   ,    347700.00 ), # pb
+    ( 'QCD_HT500to700'   ,     32100.00 ), # pb
+    ( 'QCD_HT700to1000'  ,      6831.00 ),
+    ( 'QCD_HT1000to1500' ,      1207.00 ),
+    ( 'QCD_HT1500to2000' ,       119.90 ),
+    ( 'QCD_HT2000toInf'  ,        25.24 ),
 ]
 
 # samplesets['ModelA'] = [( 'ModelA', 14.6 )]
@@ -44,7 +47,7 @@ samplesets['DataGH']   = [
 # hdirc['QCD_HT1500to2000'] =     119.90
 # hdirc['QCD_HT2000toInf']  =      25.24
 
-lumi = 20.0e3 # pb^-1
+lumi = 16.13e3 # pb^-1
 
 haddcommand = '/home/yhshin/haddws/haddws'
 
@@ -61,10 +64,10 @@ for sampleset, samplelist in samplesets.iteritems():
             eventCountHist = filehandle.Get("eventCountPreTrigger")
             eventCountPreTrigger = eventCountHist.Integral()
             scaling = xsec / eventCountPreTrigger
+            print '%s, %f, %d, %f' % (sample[0], xsec, eventCountPreTrigger, scaling)
         else:
             scaling = 1.0
         haddwsargs += ' %s %f' % (samplefile, scaling)
-        print '%s, %f, %d, %f' % (sample[0], xsec, eventCountPreTrigger, scaling)
     print ('# ====================================')
     print(haddcommand + haddwsargs)
     subprocess.call(haddcommand + haddwsargs, shell=True)

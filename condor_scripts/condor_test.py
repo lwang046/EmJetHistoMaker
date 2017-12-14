@@ -54,7 +54,8 @@ queue ${QUEUE}
 # For hepcms SL6
 jdl_template ="""
 Universe = vanilla
-Requirements = TARGET.FileSystemDomain == "privnet" && machine != "r510-0-6.privnet"
+Requirements = TARGET.FileSystemDomain == "privnet" && machine != "r510-0-1.privnet"
+request_memory = 1024
 +IsHighPriorityJob = True
 Executable            = ${EXECUTABLE}
 Arguments             = ${ARGUMENTS} $(ProcId)

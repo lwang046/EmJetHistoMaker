@@ -79,7 +79,7 @@ long HistoMakerBase::LoopOverCurrentTree()
       fcurrent = fChain->GetTreeNumber();
       TH1F* eventcounthist=(TH1F*)(fChain->GetDirectory()->GetFile()->GetDirectory("eventCountPreTrigger"))->Get("eventCountPreTrigger");
       eventCount += eventcounthist->Integral();
-      std::cout << "number of events in current root file is: "<< eventcounthist->Integral()<< std::endl;
+      std::cout << "number of pre-trigger events in current root file is: "<< eventcounthist->Integral()<< std::endl;
     }
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 

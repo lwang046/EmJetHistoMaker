@@ -59,4 +59,4 @@ void RemoveSpaces(string& input)
   input.erase(std::remove(input.begin(),input.end(),' '),input.end());
 }
 
-#endif //TEXTFILEPROCESSING_H
+#endif // TEXTFILEPROCESSING_H

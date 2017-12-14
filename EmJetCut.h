@@ -1,3 +1,6 @@
+#ifndef EMJETCUT_H
+#define EMJETCUT_H
+
 #include "TextFileProcessing.h"
 
 #include <string> // string, stof
@@ -16,24 +19,28 @@ class EmJetCut
  public:
   vector<float> values; // List of individual cut values
   vector<string> files; // List of files to run over
-  float ht;
-  float pt0;
-  float pt1;
-  float pt2;
-  float pt3;
-  float pu_dz;
-  float alpha3d_dz;
-  float alpha3d_sig;
-  float alpha3d;
-  float medAbsIp;
-  const int nPar = 10; // Defines total number of parameters
+  string  name;
+  float   nEmerging;
+  float   ht;
+  float   pt0;
+  float   pt1;
+  float   pt2;
+  float   pt3;
+  float   met;
+  float   pu_dz;
+  float   alpha3d_dz;
+  float   alpha3d_sig;
+  float   alpha3d;
+  float   medAbsIp;
+  static const int nPar = 12; // Defines total number of parameters (excluding cut name)
 };
 
 void PrintCut(EmJetCut cut)
 {
   std::cout << "================================================\n";
   std::cout << "Printing cut values\n";
-  std::cout << "ht , pt0 , pt1 , pt2 , pt3 , pu_dz , alpha3d_dz , alpha3d_sig , alpha3d ,  medAbsIp\n";
+  std::cout << "name , nEmerging , ht , pt0 , pt1 , pt2 , pt3 , met , pu_dz , alpha3d_dz , alpha3d_sig , alpha3d ,  medAbsIp\n";
+  std::cout << cut.name << " , ";
   std::cout << cut.values[0];
   for (unsigned i = 0; i < cut.values.size(); i++) {
     std::cout << ", " << cut.values[i];
@@ -45,7 +52,7 @@ void PrintCut(EmJetCut cut)
 void FieldsToCut(const vector<string>& ifields, EmJetCut& cut);
 
 void
-ReadCutFromFile(string cutFileName, EmJetCut& cut)
+ReadCutsFromFile(string cutFileName, vector<EmJetCut>& cuts)
 {
   vector<string> lines;
   FileToLines(cutFileName, lines);
@@ -62,8 +69,9 @@ ReadCutFromFile(string cutFileName, EmJetCut& cut)
       continue;
     }
     else {
+      EmJetCut cut;
       FieldsToCut(fields, cut);
-      break;
+      cuts.push_back(cut);
     }
   }
 }
@@ -73,21 +81,31 @@ ReadCutFromFile(string cutFileName, EmJetCut& cut)
 void
 FieldsToCut(const vector<string>& ifields, EmJetCut& cut)
 {
-  if (ifields.size() != cut.nPar) std::cerr << "Number of parameter entries does not match number specified in source code (EmJetCut::nPar)" << std::endl;
+  // ifields should have cut.nPar+1 entries, for cut name and one for each cut parameter
+  if (ifields.size() != cut.nPar+1) std::cerr << "Number of parameter entries does not match number specified in source code (EmJetCut::nPar)" << std::endl;
   cut.values.clear();
-  for (field: ifields) {
-    cut.values.push_back(std::stof(field));
+  for (unsigned i=0; i<ifields.size(); i++) {
+    string field = ifields[i];
+    if (i==0) {
+      cut.name = field;
+    }
+    else {
+      cut.values.push_back(std::stof(field));
+    }
   }
   assert(cut.values.size() == cut.nPar);
-  cut.ht          = cut.values[ 0 ];
-  cut.pt0         = cut.values[ 1 ];
-  cut.pt1         = cut.values[ 2 ];
-  cut.pt2         = cut.values[ 3 ];
-  cut.pt3         = cut.values[ 4 ];
-  cut.pu_dz       = cut.values[ 5 ];
-  cut.alpha3d_dz  = cut.values[ 6 ];
-  cut.alpha3d_sig = cut.values[ 7 ];
-  cut.alpha3d     = cut.values[ 8 ];
-  cut.medAbsIp    = cut.values[ 9 ];
+  cut.nEmerging   = cut.values [ 0 ];
+  cut.ht          = cut.values [ 1 ];
+  cut.pt0         = cut.values [ 2 ];
+  cut.pt1         = cut.values [ 3 ];
+  cut.pt2         = cut.values [ 4 ];
+  cut.pt3         = cut.values [ 5 ];
+  cut.met         = cut.values [ 6 ];
+  cut.pu_dz       = cut.values [ 7 ];
+  cut.alpha3d_dz  = cut.values [ 8 ];
+  cut.alpha3d_sig = cut.values [ 9 ];
+  cut.alpha3d     = cut.values [10 ];
+  cut.medAbsIp    = cut.values [11 ];
 }
 
+#endif // EMJETCUT_H

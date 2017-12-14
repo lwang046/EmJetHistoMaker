@@ -59,8 +59,9 @@ def user_define_histos():
     name = 'nVtx'                      ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 100  ) );
     name = 'ht'                        ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
     name = 'ht4'                       ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
-    name = 'PFHT800'                   ; histo_dict[name] = Histo1F(name , Bins(  2 , 0   ,    2 ) ); histo_dict[name] = offset(histo_dict[name])
-    name = 'PFHT800__PFHT475'          ; histo_dict[name] = Histo1F(name , Bins(  2 , 0   ,    2 ) ); histo_dict[name] = offset(histo_dict[name])
+    name = 'norm_ht4'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 2500 ) )
+    name = 'PFHT900'                   ; histo_dict[name] = Histo1F(name , Bins(  2 , 0   ,    2 ) ); histo_dict[name] = offset(histo_dict[name])
+    name = 'PFHT900__PFHT475'          ; histo_dict[name] = Histo1F(name , Bins(  2 , 0   ,    2 ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'sigmaPt'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1500 ) )
     name = 'sigmaPt2'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1500 ) )
     name = 'deltaPt'                   ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
@@ -110,9 +111,9 @@ def user_define_histos():
     # name = 'sys_track_ipXY'            ; histo_dict[name] = Histo1D(name , vbins['sys_track_ipXY'] )
     name = 'sys_log_track_ipXY'        ; histo_dict[name] = Histo1D(name , Bins(2000, -8. , 2.   ) )
     name = 'sys_log_track_ipXYSig'     ; histo_dict[name] = Histo1D(name , Bins(2000, -5. , 5.   ) )
-    name = 'sys_track_3dSig'           ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 19.  ) )
+    name = 'sys_track_3dSig'           ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 50.  ) )
     name = 'systest_log_track_ipXY'    ; histo_dict[name] = Histo1F(name , Bins(2000, -8. , 2.   ) )
-    name = 'systest_track_3dSig'       ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 19.  ) )
+    name = 'systest_track_3dSig'       ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 50.  ) )
     name = 'test_jet_medianIP'         ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'test_jet_medianAbsIP'      ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'track_pt'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
@@ -158,10 +159,10 @@ def user_define_histos():
     h = histo_combine1Dto2D( histo_dict['jet_pt'], histo_dict['jet_disp_frac'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['nVtx'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
     h = histo_combine1Dto2D( histo_dict['ht'], histo_dict['jet_alphaMax'], ); histo_2d_dict[h.name] = h
-    h = histo_combine1Dto2D( histo_dict['ht'], histo_dict['PFHT800'], ); histo_2d_dict[h.name] = h
-    h = histo_combine1Dto2D( histo_dict['ht'], histo_dict['PFHT800__PFHT475'], ); histo_2d_dict[h.name] = h
-    h = histo_combine1Dto2D( histo_dict['ht4'], histo_dict['PFHT800'], ); histo_2d_dict[h.name] = h
-    h = histo_combine1Dto2D( histo_dict['ht4'], histo_dict['PFHT800__PFHT475'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['ht'], histo_dict['PFHT900'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['ht'], histo_dict['PFHT900__PFHT475'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['ht4'], histo_dict['PFHT900'], ); histo_2d_dict[h.name] = h
+    h = histo_combine1Dto2D( histo_dict['ht4'], histo_dict['PFHT900__PFHT475'], ); histo_2d_dict[h.name] = h
     histo_dict.update(histo_2d_dict)
 
     # Track plot variations

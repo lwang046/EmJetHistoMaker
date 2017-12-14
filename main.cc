@@ -54,8 +54,8 @@ int main(int argc, char *argv[])
   cmd.add( runArg );
 
 	// Define switches and add it to the command line.
-	// SwitchArg pileupOnlySwitch("p","pileup","Only output pileup histograms", false);
-	// cmd.add( pileupOnlySwitch );
+	SwitchArg pileupOnlySwitch("p","pileup","Only output pileup histograms", false);
+	cmd.add( pileupOnlySwitch );
 
 	// Parse the args.
 	cmd.parse( argc, argv );
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
   int inumberOfFiles = numberOfFilesArg.getValue(); // Run over all if -1
   // vector<int> iinputFileIndex = inputFileIndexArg.getValue(); // Run over all if empty
   int irun = runArg.getValue();
+  bool pileupOnly = pileupOnlySwitch.getValue();
 
   // Main body of program
   {
@@ -126,33 +127,33 @@ int main(int argc, char *argv[])
       // Calculate total number of events in sample
       long eventCount = 0;
       long eventCountPreTrigger = 0;
-      if (!sample.isData) {
-        std::cout << "--------------------------------\n";
-        std::cout << "Calculating event count in files" << std::endl;
-        for (unsigned ifile=0; ifile < sample.files.size(); ifile++) {
-          // std::cout << "Calculating event count in file: " << ifile << std::endl;
-          string filename = sample.files[ifile];
-          string hname = "eventCountPreTrigger";
-          TFile *f = new TFile(filename.c_str());
-          if (f->IsZombie()) {
-            std::cout << "Zombie file: " << ifile << std::endl;
-            return 1;
-          }
-          TDirectory * dir = (TDirectory*)f->Get((filename+":/"+hname).c_str());
-          if (!dir) {
-            std::cout << "File with no directory: " << ifile << std::endl;
-            return 1;
-          }
-          else {
-            TH1F* eventcounthist = (TH1F*)dir->Get(hname.c_str());
-            eventCount += eventcounthist->Integral();
-          }
-          f->Close();
-          delete f;
-        }
-      }
-      std::cout << "--------------------------------\n";
-      std::cout << "Total event count in sample: " << eventCount << std::endl;
+      // if (!sample.isData) {
+      //   std::cout << "--------------------------------\n";
+      //   std::cout << "Calculating event count in files" << std::endl;
+      //   for (unsigned ifile=0; ifile < sample.files.size(); ifile++) {
+      //     // std::cout << "Calculating event count in file: " << ifile << std::endl;
+      //     string filename = sample.files[ifile];
+      //     string hname = "eventCountPreTrigger";
+      //     TFile *f = new TFile(filename.c_str());
+      //     if (f->IsZombie()) {
+      //       std::cout << "Zombie file: " << ifile << std::endl;
+      //       return 1;
+      //     }
+      //     TDirectory * dir = (TDirectory*)f->Get((filename+":/"+hname).c_str());
+      //     if (!dir) {
+      //       std::cout << "File with no directory: " << ifile << std::endl;
+      //       return 1;
+      //     }
+      //     else {
+      //       TH1F* eventcounthist = (TH1F*)dir->Get(hname.c_str());
+      //       eventCount += eventcounthist->Integral();
+      //     }
+      //     f->Close();
+      //     delete f;
+      //   }
+      // }
+      // std::cout << "--------------------------------\n";
+      // std::cout << "Total event count in sample: " << eventCount << std::endl;
 
       EmJetSample sample_filtered = sample; // Copy of sample with filtered files
       sample_filtered.files.clear();
@@ -172,7 +173,7 @@ int main(int argc, char *argv[])
         EmJetHistoMaker hm(sample_filtered);
         hm.OpenOutputFile(sampledir+"/histo-"+sample.group+"-"+sample.name+labelstring+"-"+std::to_string(irun)+".root");
         int histstatus = hm.VerifyHistograms();
-        hm.SetOptions(Sample::SIGNAL, sample.isData, sample.xsec, eventCount, true, false);
+        hm.SetOptions(Sample::SIGNAL, eventCount, true, pileupOnly);
         hm.SetCut(cutToRun);
         eventCountPreTrigger = hm.LoopOverCurrentTree(); // Returns sum of eventCountPreTrigger histogram integrals
         hm.FillEventCount(eventCountPreTrigger);

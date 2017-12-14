@@ -1,2 +1,3 @@
-# ht , pt0 , pt1 , pt2 , pt3 , pu_dz , alpha3d_dz , alpha3d_sig , alpha3d ,  medAbsIp
-1100 , 300 , 300 , 200 , 150 , 2.5   , 0.008      , 2           , 0.1     , 0.05      
+# name , ht   , pt0 , pt1 , pt2 , pt3 , pu_dz , alpha3d_dz , alpha3d_sig , alpha3d ,  medAbsIp
+cut0   , 1100 , 300 , 300 , 200 , 150 , 2.5   , 0.008      , 2           , 0.1     , 0.05      
+cut1   , 1100 , 300 , 200 , 200 , 150 , 2.5   , 0.008      , 2           , 0.1     , 0.05      
