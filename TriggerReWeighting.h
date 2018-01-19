@@ -16,18 +16,19 @@ class  TriggerReWeighting {
    TriggerReWeighting ( ) { } ;
 
  TriggerReWeighting( std::string generatedFile,
-                     std::string dataFile,
+                     // std::string dataFile,
                      std::string GenHistName,
                      std::string DataHistName) :
    generatedFileName_( generatedFile),
-     dataFileName_     ( dataFile ),
+     // dataFileName_     ( dataFile ),
      GenHistName_      ( GenHistName ),
      DataHistName_     ( DataHistName )
      {
        generatedFile_ = new TFile( generatedFileName_.c_str() ) ; //MC distribution
-       dataFile_      = new TFile( dataFileName_.c_str() );       //Data distribution
+       // dataFile_      = new TFile( dataFileName_.c_str() );       //Data distribution
 
-       Data_distr_ = new TH1F(  *(static_cast<TH1F*>(dataFile_->Get( DataHistName_.c_str() )->Clone() )) );
+       // Data_distr_ = new TH1F(  *(static_cast<TH1F*>(dataFile_->Get( DataHistName_.c_str() )->Clone() )) );
+       Data_distr_ = new TH1F(  *(static_cast<TH1F*>(generatedFile_->Get( DataHistName_.c_str() )->Clone() )) );
        auto MC_distr_temp = new TH1F(  *(static_cast<TH1F*>(generatedFile_->Get( GenHistName_.c_str() )->Clone() )) );
 
        MC_distr_ = MC_distr_temp;

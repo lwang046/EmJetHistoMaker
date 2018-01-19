@@ -1,10 +1,11 @@
 import csv
 import time
-modelset = 'cuts/modelset_combined_1122.txt'
+# modelset = 'cuts/modelset_0105.txt'
+modelset = 'cuts/modelset_0105b.txt'
 # timestring = time.strftime("%Y-%m%d-%H%M")
 timestring = time.strftime("%Y-%m%d")
-scriptfile = 'cuts/runAll-%s.sh' % (timestring)
-date = '2017-12-11'
+scriptfile = 'cuts/runSignalCuts-%s.sh' % (timestring)
+date = '2018-01-15'
 tag = 'acc0'
 with open(modelset, 'r') as csvfile, open(scriptfile, 'w+') as ofile:
     ofile.write('DATE=%s; TAG=%s\n' % (date,tag))

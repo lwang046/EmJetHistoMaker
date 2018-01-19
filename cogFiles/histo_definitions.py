@@ -219,10 +219,23 @@ def user_define_histos():
     histo_clone_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
         if name.startswith('cutflow') or name.startswith('test'):
+            histo_clone = clone_object(histo, postfix='TriggerUp')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name.startswith('cutflow') or name.startswith('test'):
             histo_clone = clone_object(histo, postfix='ModelingUp')
             histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
-
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name.startswith('cutflow') or name.startswith('test'):
+            histo_clone = clone_object(histo, postfix='PtUp')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='PtDn')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
 
     return histo_dict
 

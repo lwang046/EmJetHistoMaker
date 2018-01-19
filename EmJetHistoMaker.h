@@ -4,6 +4,7 @@
 #include "EmJetSystematics.h"
 #include "EmJetCut.h"
 #include "LumiReWeightingStandAlone.h"
+#include "TriggerReWeighting.h"
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -32,7 +33,7 @@ using std::unique_ptr;
 #define OUTPUT(x) std::cout<<#x << ": " << x << std::endl
 #endif
 
-const int debug = 0;
+const int debug = 5;
 
 class EmJetHistos;
 class EmJetSample;
@@ -68,11 +69,12 @@ class EmJetHistoMaker : public HistoMakerBase
   int GetEventCount(string ihistname);
   void SetOptions(Sample sample=Sample::SIGNAL, long nevent=1, bool isSignal=false, bool pileupOnly=false);
   int VerifyHistograms();
-  void InitLumiReweighting();
+  void InitReweighting();
   void InitPdfSet(string setname);
   // Computation functions
   float DeltaR(float eta1, float phi1, float eta2, float phi2);
   int FlavourTagging(int ij);
+  double GetPt(int ij); // Get JEC-shifted pt for given jet (Direction set by sys_.m_direction_jec)
   double GetAlpha(int ij); // Calculate alpha for given jet
   double GetAlpha2DSig(int ij);
   double GetAlpha3DSigM(int ij);
@@ -88,6 +90,7 @@ class EmJetHistoMaker : public HistoMakerBase
   double CalculateEventWeight(long eventnumber);
   double CalculatePileupWeight(long eventnumber);
   double CalculatePdfShift(long eventnumber); // direction: 0 = no shift, +1 = shifted up, -1 = shifted down
+  double GetPVTrackFraction(long eventnumber);
   bool CheckPV(long eventnumber); // Check for PV reconstruction failure
   bool SelectJet(int jet_index);
   bool SelectJet_basic(int jet_index);
@@ -111,6 +114,7 @@ class EmJetHistoMaker : public HistoMakerBase
   bool pileupOnly_;
   string file_; // Path to current input file
   unique_ptr<reweight::LumiReWeighting> LumiWeights_;
+  unique_ptr<TriggerReWeighting> TriggerWeights_;
   vector<LHAPDF::PDF*> PdfMembers_;
   // Calculated variables
   double event_ht_;
@@ -126,7 +130,7 @@ EmJetHistoMaker::EmJetHistoMaker()
   SetMaxEntries(-1);
   std::cout << "EmJetHistoMaker::EmJetHistoMaker()" << std::endl;
   TRACKSOURCE = 0;
-  InitLumiReweighting();
+  InitReweighting();
 }
 
 EmJetHistoMaker::EmJetHistoMaker(string ifilename)
@@ -137,7 +141,7 @@ EmJetHistoMaker::EmJetHistoMaker(string ifilename)
   int status = SetTree(ifilename);
   if (!status==0) std::cerr << "Error when opening file: " << ifilename << std::endl;
   TRACKSOURCE = 0;
-  InitLumiReweighting();
+  InitReweighting();
 }
 
 EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
@@ -153,7 +157,7 @@ EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
   tree_ = chain;
   Init(tree_);
   TRACKSOURCE = 0;
-  InitLumiReweighting();
+  InitReweighting();
 
   // Get options from sample
   {
@@ -170,7 +174,7 @@ EmJetHistoMaker::EmJetHistoMaker(EmJetSample isample)
   }
 }
 
-void EmJetHistoMaker::InitLumiReweighting()
+void EmJetHistoMaker::InitReweighting()
 {
   // Initialize lumi reweighting utility
   // std::string mcFile   = "/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-QCD.root";
@@ -187,6 +191,18 @@ void EmJetHistoMaker::InitLumiReweighting()
     for (int i=0; i<=100; i++) {
       double w = LumiWeights_->weight(i);
       std::cout << i << ", " << w << "\n";
+    }
+  }
+
+  // Initialize trigger reweighting utility
+  TriggerWeights_ = unique_ptr<TriggerReWeighting>(new TriggerReWeighting( "emjet_hlt_efficiency.root", "hlt_efficiency_mc", "hlt_efficiency_data"));
+  const bool printTriggerWeights = false;
+  if (printTriggerWeights) {
+    std::cout << "ht, weight\n";
+    for (int i=0; i<=100; i++) {
+      double ht = i * 25.;
+      double w = TriggerWeights_->weight(ht);
+      std::cout << ht << ", " << w << "\n";
     }
   }
 }
@@ -268,6 +284,10 @@ int EmJetHistoMaker::SetCut(EmJetCut cut)
 {
   cut_ = cut;
   sys_.SetCut(cut);
+  // Initialize Systematic caculations
+  // sys_.SetTesting(1);
+  // sys_.SetFilenames("/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-JetHT_G1.root", "/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-QCD.root");
+  sys_.SetModelingFilenames("/home/yhshin/data/condor_output/2017-12-08/histos-sys0/histo-DataGH.root", "/home/yhshin/data/condor_output/2017-12-08/histos-sys1/histo-QCD.root");
   TNamed cutname("cutname", cut_.name);
   cutname.Write();
   if (debug>=5) OUTPUT(sys_.CalculateIpXYShift());
@@ -320,11 +340,6 @@ int EmJetHistoMaker::GetEventCount(string ihistname)
 
 void EmJetHistoMaker::InitHistograms()
 {
-  // Initialize Systematic caculations
-  // sys_.SetTesting(1);
-  // sys_.SetFilenames("/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-JetHT_G1.root", "/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-QCD.root");
-  sys_.SetFilenames("/home/yhshin/data/condor_output/2017-12-08/histos-sys0/histo-DataGH.root", "/home/yhshin/data/condor_output/2017-12-08/histos-sys1/histo-QCD.root");
-
   TH1::SetDefaultSumw2();
   histo_nTrueInt_            = unique_ptr<TH1F>(new TH1F("nTrueInt"            , "nTrueInt"            , 100 , 0. , 100.));
   histo_nTrueInt_puweighted_ = unique_ptr<TH1F>(new TH1F("nTrueInt_puweighted" , "nTrueInt_puweighted" , 100 , 0. , 100.));
@@ -360,18 +375,40 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
 
   // FillEventHistograms(eventnumber, "");
 
-  FillCutflowHistograms(eventnumber, "");
-  sys_.SetDirectionModeling(1);
-  FillCutflowHistograms(eventnumber, "__ModelingUp");
-  sys_.SetDirectionModeling(0);
   FillSystematicHistograms(eventnumber);
   FillSystematicTestingHistograms(eventnumber);
+
+  string tag = ""; sys_.SetDirectionJec(0);
+  {
+    sys_.SetDirectionModeling(0);
+    FillCutflowHistograms(eventnumber, ""+tag);
+    sys_.SetDirectionModeling(1);
+    FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
+    sys_.SetDirectionModeling(0);
+  }
+  tag = "__PtUp"; sys_.SetDirectionJec(1);
+  {
+    sys_.SetDirectionModeling(0);
+    FillCutflowHistograms(eventnumber, ""+tag);
+    sys_.SetDirectionModeling(1);
+    FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
+    sys_.SetDirectionModeling(0);
+  }
+  tag = "__PtDn"; sys_.SetDirectionJec(-1);
+  {
+    sys_.SetDirectionModeling(0);
+    FillCutflowHistograms(eventnumber, ""+tag);
+    sys_.SetDirectionModeling(1);
+    FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
+    sys_.SetDirectionModeling(0);
+  }
 }
 
 void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
 {
   double w = CalculateEventWeight(eventnumber);
   if (debug==1) std::cout << "Entering FillCutflowHistograms" << std::endl;
+  // if (debug>=5) std::cout << "Entering FillCutflowHistograms for tag: " << tag << std::endl;
 
   double pdfshift = 0.;
   if(!isData_) {
@@ -389,7 +426,12 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) ) nAlphaMax++;
     if ( SelectJet_basic(ij) && SelectJet_alphaMax(ij) && SelectJet_ipCut(ij) ) nEmerging++;
   }
-  double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
+  double ht4 = GetPt(0) + GetPt(1) + GetPt(2) + GetPt(3);
+  // Calculate ht
+  double ht = 0;
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    ht += GetPt(ij);
+  }
   // Find basic jets
   vector<int> ijs_basic;
   for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
@@ -409,7 +451,7 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   bool cuts[nCut]; string labels[nCut];
   int i=0;
   cuts[0] = true                                               ; labels[0]=( "nocut                      ") ; i++ ;
-  cuts[i] = cuts[i-1] && HLT_PFHT800 == 1                      ; labels[i]=( "HLT_PFHT800 == 1           ") ; i++ ;
+  cuts[i] = cuts[i-1] && HLT_PFHT900 == 1                      ; labels[i]=( "HLT_PFHT900 == 1           ") ; i++ ;
   cuts[i] = cuts[i-1] && jet_pt->size()>=4                     ; labels[i]=( "jet_pt->size()>=4          ") ; i++ ;
   cuts[i] = cuts[i-1] && ht4 > cut_.ht                         ; labels[i]=( "ht4 > ht_min               ") ; i++ ;
   cuts[i] = cuts[i-1] && met_pt > cut_.met                     ; labels[i]=( "met > met_min              ") ; i++ ;
@@ -417,13 +459,15 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0                ; labels[i]=( "abs((*pv_z)[0]) < 15.0     ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_basic.size() == 4                 ; labels[i]=( "ijs_basic.size() == 4      ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_basic.back() == 3                 ; labels[i]=( "ijs_basic.back() == 3      ") ; i++ ;
-  cuts[i] = cuts[i-1] && (*jet_pt)[0] > cut_.pt0               ; labels[i]=( "(*jet_pt)[0] > pt0_min     ") ; i++ ;
-  cuts[i] = cuts[i-1] && (*jet_pt)[1] > cut_.pt1               ; labels[i]=( "(*jet_pt)[1] > pt1_min     ") ; i++ ;
-  cuts[i] = cuts[i-1] && (*jet_pt)[2] > cut_.pt2               ; labels[i]=( "(*jet_pt)[2] > pt2_min     ") ; i++ ;
-  cuts[i] = cuts[i-1] && (*jet_pt)[3] > cut_.pt3               ; labels[i]=( "(*jet_pt)[3] > pt3_min     ") ; i++ ;
+  cuts[i] = cuts[i-1] && GetPt(0) > cut_.pt0                   ; labels[i]=( "GetPt(0) > pt0_min         ") ; i++ ;
+  cuts[i] = cuts[i-1] && GetPt(1) > cut_.pt1                   ; labels[i]=( "GetPt(1) > pt1_min         ") ; i++ ;
+  cuts[i] = cuts[i-1] && GetPt(2) > cut_.pt2                   ; labels[i]=( "GetPt(2) > pt2_min         ") ; i++ ;
+  cuts[i] = cuts[i-1] && GetPt(3) > cut_.pt3                   ; labels[i]=( "GetPt(3) > pt3_min         ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1              ; labels[i]=( "nEmerging >= 1             ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= cut_.nEmerging ; labels[i]=( "nEmerging >= nEmerging_min ") ; i++ ;
-  cuts[i] = cuts[i-1] && CheckPV(eventnumber)                  ; labels[i]=( "CheckPV(eventnumber)       ") ; i++ ;
+  cuts[i] = cuts[i-1] && GetPVTrackFraction(eventnumber) > 0.1 ; labels[i]=( "PVTrackFraction > 0.1      ") ; i++ ;
+  // cuts[i] = cuts[i-1] && CheckPV(eventnumber)                  ; labels[i]=( "CheckPV(eventnumber)       ") ; i++ ;
+  float triggerWeight = TriggerWeights_->weight(ht);
   for (int ic = 0; ic < nCut; ic ++) {
     if (isData_) {
       if ( cuts[ic] ) histo_->hist1d["cutflow"+tag]->Fill(labels[ic].c_str(), 1);
@@ -432,6 +476,7 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
       if ( cuts[ic] ) histo_->hist1d["cutflow"+tag]->Fill(labels[ic].c_str(), w);
       if ( cuts[ic] ) histo_->hist1d["cutflow__PdfUp"+tag]->Fill(labels[ic].c_str(), w*(1+pdfshift));
       if ( cuts[ic] ) histo_->hist1d["cutflow__PdfDn"+tag]->Fill(labels[ic].c_str(), w*(1-pdfshift));
+      if ( cuts[ic] ) histo_->hist1d["cutflow__TriggerUp"+tag]->Fill(labels[ic].c_str(), w*(1+triggerWeight));
     }
   }
   if (cuts[12]) {
@@ -738,13 +783,13 @@ void EmJetHistoMaker::FillHltHistograms(long eventnumber)
   // OUTPUT((*jet_pt).size());
   double ht4 = (*jet_pt)[0] + (*jet_pt)[1] + (*jet_pt)[2] + (*jet_pt)[3];
 
-  histo_->hist1d["PFHT800"]->Fill(HLT_PFHT800, w);
-  histo_->hist2d["PFHT800_VS_ht"]->Fill(ht, HLT_PFHT800, w);
-  histo_->hist2d["PFHT800_VS_ht4"]->Fill(ht4, HLT_PFHT800, w);
+  histo_->hist1d["PFHT900"]->Fill(HLT_PFHT900, w);
+  histo_->hist2d["PFHT900_VS_ht"]->Fill(ht, HLT_PFHT900, w);
+  histo_->hist2d["PFHT900_VS_ht4"]->Fill(ht4, HLT_PFHT900, w);
   if (HLT_PFHT475) {
-    histo_->hist1d["PFHT800__PFHT475"]->Fill(HLT_PFHT800, w);
-    histo_->hist2d["PFHT800__PFHT475_VS_ht"]->Fill(ht, HLT_PFHT800, w);
-    histo_->hist2d["PFHT800__PFHT475_VS_ht4"]->Fill(ht4, HLT_PFHT800, w);
+    histo_->hist1d["PFHT900__PFHT475"]->Fill(HLT_PFHT900, w);
+    histo_->hist2d["PFHT900__PFHT475_VS_ht"]->Fill(ht, HLT_PFHT900, w);
+    histo_->hist2d["PFHT900__PFHT475_VS_ht4"]->Fill(ht4, HLT_PFHT900, w);
   }
 
 }
@@ -1003,6 +1048,22 @@ EmJetHistoMaker::VerifyHistograms()
 }
 
 double
+EmJetHistoMaker::GetPt(int ij) // Get JEC-shifted pt for given jet (Direction set by sys_.m_direction_jec)
+{
+  int direction = sys_.GetDirectionJec();
+  assert(direction == 0 || direction == -1 || direction == 1);
+  if (direction == 0) {
+    return  (*jet_pt)[ij];
+  } else if (direction == 1) {
+    return  (*jet_ptUp)[ij];
+  } else if (direction == -1) {
+    return  (*jet_ptDown)[ij];
+  }
+  return -1;
+}
+
+
+double
 EmJetHistoMaker::GetAlpha(int ij) // Calculate alpha for given jet
 {
   double ptsum_total=0, ptsum=0;
@@ -1038,7 +1099,7 @@ double EmJetHistoMaker::GetAlpha3DSigM(int ij)
     if ( !SelectTrack(ij, itk) ) continue;
 
     ptsum_total += (*track_pt)[ij][itk];
-    double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power((*track_ipXYSig)[ij][itk], 2.0);
+    double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
     double tk3dsig  = TMath::Sqrt(tk3dsig2);
     if( tk3dsig< cut_.alpha3d_sig ) ptsum += (*track_pt)[ij][itk];
   }
@@ -1169,4 +1230,19 @@ bool EmJetHistoMaker::PartonJetMatching(int ij, int igp)
   bool matched = false;
   if( DeltaR((*jet_eta)[ij], (*jet_phi)[ij], (*gp_eta)[igp], (*gp_phi)[igp])< 0.4 )  matched=true;
   return matched;
+}
+
+double EmJetHistoMaker::GetPVTrackFraction(long eventnumber)
+{
+  int nTrack_total = 0;
+  int nPVTrack = 0;
+  for(int ij=0; ij<4; ij++) {
+    for(unsigned itk=0; itk<(*track_pt)[ij].size(); itk++) {
+      if( (*track_source)[ij][itk]!=0 ) continue;
+      if( ( (*track_quality)[ij][itk] & 4 ) == 0 ) continue; // Only process tracks with "highPurity" quality
+      if( fabs((*pv_z)[0]-(*track_ref_z)[ij][itk])<0.01 ) nPVTrack++; // count tracks from the PV
+      nTrack_total++;
+    }
+  }
+  return (double) nPVTrack/nTrack_total;
 }

@@ -23,28 +23,32 @@ class EmJetSystematics
 {
  public:
   EmJetSystematics();
-  void SetFilenames(string filename_data, string filename_qcd);
-  void SetCut(EmJetCut cut) { cut_ = cut; };
+  void SetModelingFilenames(string filename_data, string filename_qcd);
+  void SetCut(EmJetCut cut);
   double CalculateIpXYShift();
   double GetShiftedIpXY(double ipXY_in);
   double Calculate3dSigShift();
   double GetShifted3dSig(double in_3dSig);
+  int GetDirectionJec() {return m_direction_jec;};
   void SetTesting(int testing) {m_testing = testing;};
+  void SetDirectionJec(int direction) {m_direction_jec = direction;};
   void SetDirectionModeling(int direction) {m_direction_modeling = direction;};
-  void SetDirectionPdf(int direction) {m_directions_pdf = direction;};
+  void SetDirectionPdf(int direction) {m_direction_pdf = direction;};
  private:
   EmJetCut cut_;
-  int debug = 0;
+  int debug = 1;
   int m_testing = 0; // Set to non-zero to enable testing
 
   // Directions for systematic shifts
   //  0 : no shift
   //  1 : positive shift
   // -1 : negative shift
-  int m_directions_pdf;
+  int m_direction_jec;
+  int m_direction_pdf;
   int m_direction_modeling;
 
   int m_modeling_ready = 0; // Only calculate MC modeling shifts if not zero
+  int m_cut_ready = 0; // Only calculate MC modeling shifts if not zero
   string m_filename_data;
   string m_filename_qcd;
   double m_ipXY_shift;
@@ -53,11 +57,12 @@ class EmJetSystematics
 
 EmJetSystematics::EmJetSystematics()
 {
-  m_directions_pdf      = 0;
+  m_direction_jec       = 0;
+  m_direction_pdf      = 0;
   m_direction_modeling  = 0;
 }
 
-void EmJetSystematics::SetFilenames(string filename_data, string filename_qcd)
+void EmJetSystematics::SetModelingFilenames(string filename_data, string filename_qcd)
 {
   m_filename_data = filename_data;
   m_filename_qcd = filename_qcd;
@@ -66,8 +71,15 @@ void EmJetSystematics::SetFilenames(string filename_data, string filename_qcd)
   m_modeling_ready = 1;
 }
 
+void EmJetSystematics::SetCut(EmJetCut cut)
+{
+   cut_ = cut;
+   m_cut_ready = 1;
+}
+
 double EmJetSystematics::CalculateIpXYShift()
 {
+  assert(m_cut_ready>0);
   if (debug) {
     std::cout << ("================================\n");
     std::cout << ("CalculateIpXYShift\n");
@@ -126,11 +138,15 @@ double EmJetSystematics::GetShiftedIpXY(double ipXY_in)
   assert(direction==0 || direction ==1 || direction ==-1);
   assert(m_modeling_ready);
   double ipXY_out = ipXY_in * TMath::Power(m_ipXY_shift, m_direction_modeling);
+  // DEBUGOUTPUT(m_ipXY_shift);
+  // DEBUGOUTPUT(ipXY_in);
+  // DEBUGOUTPUT(ipXY_out);
   return ipXY_out;
 }
 
 double EmJetSystematics::Calculate3dSigShift()
 {
+  assert(m_cut_ready>0);
   if (debug) {
     std::cout << ("================================\n");
     std::cout << ("Calculate3dSigShift\n");
