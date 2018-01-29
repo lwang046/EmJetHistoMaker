@@ -30,11 +30,11 @@ samplesets['QCD'] = [
 #     ( 'JetHT_F1', 1.0 ),
 # ]
 
-samplesets['DataGH']   = [
-    ( 'JetHT_G1', -1.0 ), # Put negative cross section for data
-    ( 'JetHT_H2', -1.0 ),
-    ( 'JetHT_H3', -1.0 ),
-]
+# samplesets['DataGH']   = [
+#     ( 'JetHT_G1', -1.0 ), # Put negative cross section for data
+#     ( 'JetHT_H2', -1.0 ),
+#     ( 'JetHT_H3', -1.0 ),
+# ]
 
 # hdirc = OrderedDict()
 

@@ -455,14 +455,14 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   cuts[i] = cuts[i-1] && jet_pt->size()>=4                     ; labels[i]=( "jet_pt->size()>=4          ") ; i++ ;
   cuts[i] = cuts[i-1] && ht4 > cut_.ht                         ; labels[i]=( "ht4 > ht_min               ") ; i++ ;
   cuts[i] = cuts[i-1] && met_pt > cut_.met                     ; labels[i]=( "met > met_min              ") ; i++ ;
-  cuts[i] = cuts[i-1] && (*pv_index)[0] == 0                   ; labels[i]=( "(*pv_index)[0] == 0        ") ; i++ ;
-  cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0                ; labels[i]=( "abs((*pv_z)[0]) < 15.0     ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_basic.size() == 4                 ; labels[i]=( "ijs_basic.size() == 4      ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_basic.back() == 3                 ; labels[i]=( "ijs_basic.back() == 3      ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPt(0) > cut_.pt0                   ; labels[i]=( "GetPt(0) > pt0_min         ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPt(1) > cut_.pt1                   ; labels[i]=( "GetPt(1) > pt1_min         ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPt(2) > cut_.pt2                   ; labels[i]=( "GetPt(2) > pt2_min         ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPt(3) > cut_.pt3                   ; labels[i]=( "GetPt(3) > pt3_min         ") ; i++ ;
+  cuts[i] = cuts[i-1] && (*pv_index)[0] == 0                   ; labels[i]=( "(*pv_index)[0] == 0        ") ; i++ ;
+  cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0                ; labels[i]=( "abs((*pv_z)[0]) < 15.0     ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1              ; labels[i]=( "nEmerging >= 1             ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= cut_.nEmerging ; labels[i]=( "nEmerging >= nEmerging_min ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPVTrackFraction(eventnumber) > 0.1 ; labels[i]=( "PVTrackFraction > 0.1      ") ; i++ ;
@@ -488,15 +488,16 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
       }
     }
   }
-  if (cuts[6]) {
-    // FillEventHistograms(eventnumber, "__EVTkinematic");
+  FillEventHistograms(eventnumber, "");
+  if (cuts[10]) {
+    FillEventHistograms(eventnumber, "__EVTkinematic");
   }
-  if (cuts[7]) {
-    // FillEventHistograms(eventnumber, "__EVTpvpass");
-  }
-  if (cuts[nCut-1]) {
-    // FillEventHistograms(eventnumber, "__EVTallpass");
-  }
+  // if (cuts[7]) {
+  //   // FillEventHistograms(eventnumber, "__EVTpvpass");
+  // }
+  // if (cuts[nCut-1]) {
+  //   // FillEventHistograms(eventnumber, "__EVTallpass");
+  // }
 }
 
 void EmJetHistoMaker::FillSystematicHistograms (long eventnumber)
@@ -547,217 +548,52 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
     double pdfshift = CalculatePdfShift(eventnumber);
   }
 
-  // Calculate ht
-  double ht = 0;
-  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
-    ht += (*jet_pt)[ij];
-  }
-  event_ht_ = ht;
-
-  int nJet_basic = 0, nJet_alphaMax = 0, nJet_ipcut = 0;
-  int nEmerging = 0;
   // Jet loop
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
     if (ij>=4) break; // :JETCUT:
     FillJetHistograms(eventnumber, ij, ""+tag);
-    if ( (*jet_nDarkPions)[ij] > 0 ) {
-      FillJetHistograms(eventnumber, ij, "__sig"+tag);
-    }
-    if (SelectJet_basic(ij)) {
-      FillJetHistograms(eventnumber, ij, "__JTbasic"+tag);
-      nJet_basic++;
-      if (SelectJet_alphaMax(ij)) {
-        FillJetHistograms(eventnumber, ij, "__JTalphaMax"+tag);
-        nJet_alphaMax++;
-        nEmerging++;
-        if (SelectJet_ipCut(ij)) {
-          FillJetHistograms(eventnumber, ij, "__JTipcut"+tag);
-          nJet_ipcut++;
-        }
-      }
-    }
     // Jet cut 1
     // FillJetHistograms(eventnumber, "__JETCUT1");
     // Jet cut 2
     // FillJetHistograms(eventnumber, "__JETCUT2");
   }
-
-  // Existing quantities (in ntuple)
-  histo_->hist1d["nVtx"]->Fill(nVtx, w);
-
-  // Calculated quantities
-  histo_->hist1d["ht"]->Fill(ht, w);
-  histo_->hist1d[string("jet_N")+"__JTbasic"+tag]->Fill(nJet_basic, w);
-  // histo_->hist1d[string("nJet")+"__JTbasic"+tag]->Fill(nEmerging, w);
-  // histo_->hist1d[string("nEmerging")+tag]->Fill(nEmerging, w);
-  histo_->hist1d[string("jet_N")+"__JTalphaMax"+tag]->Fill(nJet_alphaMax, w);
-  histo_->hist1d[string("jet_N")+"__JTipcut"+tag]->Fill(nJet_ipcut, w);
 }
 
 void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
 {
   if (debug==1) std::cout << "Entering FillJetHistograms" << std::endl;
   double w = CalculateEventWeight(eventnumber);
-  // OUTPUT( (*jet_alpha2)[ij] );
-  // OUTPUT( GetAlpha(ij) );
 
-  double ipXYcut = 0.025;
-  // Calculate median 2D impact parameter (source=0)
-  int nTrack = 0;
-  double medianIP = 0.;
-  double maxIP = 0.;
   {
-    vector<double> vector_ipXY;
     for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
-      if ( (*track_source)[ij][itk] == 0 ) {
-        vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
-        FillTrackHistograms(eventnumber, ij, itk, tag);
-        if ( (*track_ipXY)[ij][itk] < ipXYcut ) {
-          FillTrackHistograms(eventnumber, ij, itk, "__TKprompt"+tag);
-        }
-        else {
-          FillTrackHistograms(eventnumber, ij, itk, "__TKdisplaced"+tag);
-        }
+      if ( SelectTrack(ij, itk) ) {
+        FillTrackHistograms(eventnumber, ij, itk, ""+tag);
       }
     }
-    std::sort(vector_ipXY.begin(), vector_ipXY.end());
-    nTrack = vector_ipXY.size();
-    medianIP = 0.;
-    if (nTrack>0) {
-      if ( nTrack % 2 == 0 ) {
-        medianIP = (vector_ipXY[nTrack/2 - 1] + vector_ipXY[nTrack/2]) / 2;
-      }
-      else {
-        medianIP = (vector_ipXY[nTrack/2]);
-      }
-      maxIP = vector_ipXY[nTrack-1];
-    }
-  }
-
-  // Calculate median 2D impact parameter (source=0, pt>1)
-  int nTrackPostCut = 0;
-  double medianIPPostCut = 0.;
-  {
-    vector<double> vector_ipXY;
-    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
-      if ( (*track_source)[ij][itk] == 0 && (*track_algo)[ij][itk] >= 6 ) {
-        vector_ipXY.push_back( (*track_ipXY)[ij][itk] );
-        FillTrackHistograms(eventnumber, ij, itk, tag);
-      }
-    }
-    std::sort(vector_ipXY.begin(), vector_ipXY.end());
-    int nTrack = vector_ipXY.size();
-    double medianIP = 0.;
-    if (nTrack>0) {
-      if ( nTrack % 2 == 0 ) {
-        medianIP = (vector_ipXY[nTrack/2 - 1] + vector_ipXY[nTrack/2]) / 2;
-      }
-      else {
-        medianIP = (vector_ipXY[nTrack/2]);
-      }
-    }
-    nTrackPostCut = nTrack;
-    medianIPPostCut = medianIP;
-  }
-
-  // Calculate prompt/displaced energy fraction (source=0)
-  double prompt_frac = 0;
-  double disp_frac = 0;
-  {
-    double prompt_sum = 0;
-    double disp_sum = 0;
-    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
-      if ( (*track_source)[ij][itk] == 0 ) {
-        if ( (*track_ipXY)[ij][itk] > 0.1 ) {
-          disp_sum += (*track_pt)[ij][itk];
-        }
-        else {
-          prompt_sum += (*track_pt)[ij][itk];
-        }
-      }
-    }
-    prompt_frac = prompt_sum / (prompt_sum + disp_sum);
-    disp_frac = disp_sum / (prompt_sum + disp_sum);
-  }
-
-  // Calculate missing hit track energy fraction (source=0)
-  double missInnerHit_frac = 0;
-  {
-    double missInnerHit_sum = 0;
-    double sum = 0;
-    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
-      if ( (*track_source)[ij][itk] == 0 ) {
-        if ( (*track_nMissInnerHits)[ij][itk] >= 1 ) {
-          missInnerHit_sum += (*track_pt)[ij][itk];
-        }
-        sum += (*track_pt)[ij][itk];
-      }
-    }
-    missInnerHit_frac = missInnerHit_sum / sum;
   }
 
   // Existing quantities (in ntuple)
   histo_->hist1d["jet_pt"+tag]->Fill((*jet_pt)[ij], w);
   histo_->hist1d["jet_eta"+tag]->Fill((*jet_eta)[ij], w);
   histo_->hist1d["jet_phi"+tag]->Fill((*jet_phi)[ij], w);
-  histo_->hist1d["jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz1um"   +tag]->Fill((*jet_alphaMax_dz1um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz2um"   +tag]->Fill((*jet_alphaMax_dz2um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz5um"   +tag]->Fill((*jet_alphaMax_dz5um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz10um"  +tag]->Fill((*jet_alphaMax_dz10um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz20um"  +tag]->Fill((*jet_alphaMax_dz20um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz50um"  +tag]->Fill((*jet_alphaMax_dz50um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz100um" +tag]->Fill((*jet_alphaMax_dz100um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz200um" +tag]->Fill((*jet_alphaMax_dz200um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz500um" +tag]->Fill((*jet_alphaMax_dz500um)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz1mm"   +tag]->Fill((*jet_alphaMax_dz1mm)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz2mm"   +tag]->Fill((*jet_alphaMax_dz2mm)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz5mm"   +tag]->Fill((*jet_alphaMax_dz5mm)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz1cm"   +tag]->Fill((*jet_alphaMax_dz1cm)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz2cm"   +tag]->Fill((*jet_alphaMax_dz2cm)[ij], w);
-  histo_->hist1d["jet_alphaMax_dz5cm"   +tag]->Fill((*jet_alphaMax_dz5cm)[ij], w);
-  histo_->hist1d["jet_cef"+tag]->Fill((*jet_cef)[ij], w);
-  histo_->hist1d["jet_nef"+tag]->Fill((*jet_nef)[ij], w);
-  histo_->hist1d["jet_chf"+tag]->Fill((*jet_chf)[ij], w);
-  histo_->hist1d["jet_nhf"+tag]->Fill((*jet_nhf)[ij], w);
-  // histo_->hist1d["jet_pef"+tag]->Fill((*jet_pef)[ij], w);
-
-  // Calculated quantities
-  histo_->hist1d["jet_nTrack"+tag]->Fill(nTrack, w);
-  histo_->hist1d["jet_maxIP"+tag]->Fill(maxIP, w);
-  histo_->hist1d["jet_medianIP"+tag]->Fill(medianIP, w);
-  histo_->hist1d["jet_nTrackPostCut"+tag]->Fill(nTrackPostCut, w);
-  histo_->hist1d["jet_medianIPPostCut"+tag]->Fill(medianIPPostCut, w);
-  histo_->hist1d["jet_prompt_frac"+tag]->Fill(prompt_frac, w);
-  histo_->hist1d["jet_disp_frac"+tag]->Fill(disp_frac, w);
-  histo_->hist1d["jet_missInnerHit_frac"+tag]->Fill(missInnerHit_frac, w);
-
-  // 2D histos
-  histo_->hist2d[string()+"jet_disp_frac"+"_VS_"+"jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], disp_frac, w);
-  histo_->hist2d[string()+"jet_disp_frac"+"_VS_"+"jet_pt"+tag]->Fill((*jet_pt)[ij], disp_frac, w);
-  histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"jet_pt"+tag]->Fill((*jet_pt)[ij], (*jet_alphaMax)[ij], w);
-  histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"ht"+tag]->Fill(event_ht_, (*jet_alphaMax)[ij], w);
-  histo_->hist2d[string()+"jet_alphaMax"+"_VS_"+"nVtx"+tag]->Fill(nVtx, (*jet_alphaMax)[ij], w);
-  histo_->hist2d[string()+"jet_maxIP"+"_VS_"+"jet_alphaMax"+tag]->Fill((*jet_alphaMax)[ij], maxIP, w);
 }
 
 void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, string tag)
 {
   if (debug==1) std::cout << "Entering FillTrackHistograms" << std::endl;
-  if (debug==2) OUTPUT(tag);
 
   double w = CalculateEventWeight(eventnumber);
+
+  double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
+  double tk3dsig  = TMath::Sqrt(tk3dsig2);
 
   // Existing quantities (in ntuple)
   histo_->hist1d["track_pt"+tag]->Fill((*track_pt)[ij][itk], w);
   histo_->hist1d["track_eta"+tag]->Fill((*track_eta)[ij][itk], w);
   histo_->hist1d["track_phi"+tag]->Fill((*track_phi)[ij][itk], w);
-  histo_->hist1d["track_quality"+tag]->Fill((*track_quality)[ij][itk], w);
-  histo_->hist1d["track_algo"+tag]->Fill((*track_algo)[ij][itk], w);
-  histo_->hist1d["track_ipXY"+tag]->Fill((*track_ipXY)[ij][itk], w);
-  histo_->hist1d["track_ipXYb"+tag]->Fill((*track_ipXY)[ij][itk], w);
-  histo_->hist1d["track_nHits"+tag]->Fill((*track_nHits)[ij][itk], w);
-  histo_->hist1d["track_nMissInnerHits"+tag]->Fill((*track_nMissInnerHits)[ij][itk], w);
+  histo_->hist1d["track_ip3DSig"+tag]->Fill((*track_ip3DSig)[ij][itk], w);
+  // Calculated quantities
+  histo_->hist1d["track_tk3DSig"+tag]->Fill(tk3dsig, w);
 }
 
 void EmJetHistoMaker::FillPileupHistograms(long eventnumber, string tag)

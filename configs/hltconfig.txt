@@ -11,6 +11,9 @@ QCD   , QCD_HT700to1000  , QCD    , MC   , false , 6831000     , inputs/20171208
 QCD   , QCD_HT1000to1500 , QCD    , MC   , false , 1207000     , inputs/20171208_HLT/HLT_QCD_HT1000to1500.txt
 QCD   , QCD_HT1500to2000 , QCD    , MC   , false , 119900      , inputs/20171208_HLT/HLT_QCD_HT1500to2000.txt
 QCD   , QCD_HT2000toInf  , QCD    , MC   , false , 25240       , inputs/20171208_HLT/HLT_QCD_HT2000toInf.txt
+Data  , SingleMuon_G1    , QCD    , DATA , false , 1.0         , inputs/20180123_HLT/HLT_SingleMuon_G1.txt
+Data  , SingleMuon_H2    , QCD    , DATA , false , 1.0         , inputs/20180123_HLT/HLT_SingleMuon_H2.txt
+Data  , SingleMuon_H3    , QCD    , DATA , false , 1.0         , inputs/20180123_HLT/HLT_SingleMuon_H3.txt
 # QCD                      , QCD_HT500to700           , QCD    , MC , false , 32100000 , /home/yhshin/workspace/EmJetHistoMaker/inputs/20171208_HLT/HLT_QCD_HT500to700.txt
 # QCD                      , QCD_HT700to1000          , QCD    , MC , false ,  6831000 , /home/yhshin/workspace/EmJetHistoMaker/inputs/20171208_HLT/HLT_QCD_HT700to1000_all.txt
 # QCD                      , QCD_HT1000to1500         , QCD    , MC , false ,  1207000 , /home/yhshin/workspace/EmJetHistoMaker/inputs/20171208_HLT/HLT_QCD_HT1000to1500_all.txt
