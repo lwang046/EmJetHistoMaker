@@ -1,13 +1,14 @@
 import csv
 import time
-# modelset = 'cuts/modelset_0105.txt'
-modelset = 'cuts/modelset_0105b.txt'
+modelset = 'cuts/modelset_0105_combined.txt'
 # timestring = time.strftime("%Y-%m%d-%H%M")
 timestring = time.strftime("%Y-%m%d")
 scriptfile = 'cuts/runSignalCuts-%s.sh' % (timestring)
-date = '2018-01-15'
+date = '2018-02-12'
 tag = 'acc0'
+comment = 'Using emjet_hlt_efficiency_20180212_50GeV.root'
 with open(modelset, 'r') as csvfile, open(scriptfile, 'w+') as ofile:
+    ofile.write('# %s\n' % (comment))
     ofile.write('DATE=%s; TAG=%s\n' % (date,tag))
     r = csv.reader(csvfile, skipinitialspace=True, delimiter=',')
     for row in r:

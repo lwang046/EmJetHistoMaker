@@ -14,7 +14,7 @@ os.chdir(args.directory)
 samplesets = OrderedDict() # Dictionary of list of tuples. Tuple contains (label, xsec_in_pb)
 samplesets['QCD'] = [
     ( 'QCD_HT100to200'   ,  27990000.00 ), # pb
-    ( 'QCD_HT200to300'   ,   1712000.00 ), # pb
+    # ( 'QCD_HT200to300'   ,   1712000.00 ), # pb FIXME
     ( 'QCD_HT300to500'   ,    347700.00 ), # pb
     ( 'QCD_HT500to700'   ,     32100.00 ), # pb
     ( 'QCD_HT700to1000'  ,      6831.00 ),

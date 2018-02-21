@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Thu Oct 12 15:47:14 2017 by ROOT version 6.06/01
+// Mon Jan 29 17:21:41 2018 by ROOT version 6.06/01
 // from TTree emJetTree/emJetTree
-// found on file: /store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root
+// found on file: /store/user/yoshin/EmJetAnalysis/HLT-Analysis-20180123-v0/HLT_SingleMuon_G1/SingleMuon/HLT-Analysis-20180123/180124_162729/0000/ntuple_1.root
 //////////////////////////////////////////////////////////
 
 #ifndef BaseClass_h
@@ -435,11 +435,11 @@ BaseClass::BaseClass(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/store/user/yoshin/EmJetAnalysis/HLT-Analysis-20180123-v0/HLT_SingleMuon_G1/SingleMuon/HLT-Analysis-20180123/180124_162729/0000/ntuple_1.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("/store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root");
+         f = new TFile("/store/user/yoshin/EmJetAnalysis/HLT-Analysis-20180123-v0/HLT_SingleMuon_G1/SingleMuon/HLT-Analysis-20180123/180124_162729/0000/ntuple_1.root");
       }
-      TDirectory * dir = (TDirectory*)f->Get("/store/user/yoshin/EmJetAnalysis/Analysis-20170823-v0/HLT_QCD_HT1500to2000/QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/Analysis-20170823/170824_161358/0000/ntuple_1.root:/emJetAnalyzer");
+      TDirectory * dir = (TDirectory*)f->Get("/store/user/yoshin/EmJetAnalysis/HLT-Analysis-20180123-v0/HLT_SingleMuon_G1/SingleMuon/HLT-Analysis-20180123/180124_162729/0000/ntuple_1.root:/emJetAnalyzer");
       dir->GetObject("emJetTree",tree);
 
    }

@@ -12,13 +12,13 @@ args = parser.parse_args()
 os.chdir(args.directory)
 
 samplesets = OrderedDict() # Dictionary of list of tuples. Tuple contains (label, xsec_in_pb)
-samplesets['QCD'] = [
-    ( 'QCD_HT500to700'   ,   32100.00 ), # pb
-    ( 'QCD_HT700to1000'  ,    6831.00 ),
-    ( 'QCD_HT1000to1500' ,    1207.00 ),
-    ( 'QCD_HT1500to2000' ,     119.90 ),
-    ( 'QCD_HT2000toInf'  ,      25.24 ),
-]
+# samplesets['QCD'] = [
+#     ( 'QCD_HT500to700'   ,   32100.00 ), # pb
+#     ( 'QCD_HT700to1000'  ,    6831.00 ),
+#     ( 'QCD_HT1000to1500' ,    1207.00 ),
+#     ( 'QCD_HT1500to2000' ,     119.90 ),
+#     ( 'QCD_HT2000toInf'  ,      25.24 ),
+# ]
 
 # samplesets['ModelA'] = [( 'ModelA', 14.6 )]
 
@@ -35,6 +35,15 @@ samplesets['QCD'] = [
 #     ( 'JetHT_H2', -1.0 ),
 #     ( 'JetHT_H3', -1.0 ),
 # ]
+samplesets['DataGH']   = [
+    ( 'SingleMuon_G1', -1.0 ), # Put negative cross section for data
+    ( 'SingleMuon_H2', -1.0 ),
+    ( 'SingleMuon_H3', -1.0 ),
+]
+samplesets['DataH']   = [
+    ( 'SingleMuon_H2', -1.0 ),
+    ( 'SingleMuon_H3', -1.0 ),
+]
 
 # hdirc = OrderedDict()
 

@@ -1,12 +1,14 @@
 import csv
 import time
-modelset = 'cuts/allmodels.txt'
+modelset = 'cuts/allmodels_withcuts.txt'
 # timestring = time.strftime("%Y-%m%d-%H%M")
 timestring = time.strftime("%Y-%m%d")
 scriptfile = 'cuts/runAllCuts-%s.sh' % (timestring)
-date = '2018-01-16'
+date = '2018-02-15'
 tag = 'acc0'
+comment = 'Add shifted pileup uncertainty histograms'
 with open(modelset, 'r') as csvfile, open(scriptfile, 'w+') as ofile:
+    ofile.write('# %s\n' % (comment))
     ofile.write('DATE=%s; TAG=%s\n' % (date,tag))
     r = csv.reader(csvfile, skipinitialspace=True, delimiter=',')
     for row in r:

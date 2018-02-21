@@ -53,7 +53,9 @@ def user_define_histos():
     histo_dict = OrderedDict()
     name = 'cutflow'                   ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
     name = 'cutflow2'                  ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
+    name = 'weight_trigger'            ; histo_dict[name] = Histo1F(name , Bins(100 , 0   ,  10. ) );
     name = 'pdfshift'                  ; histo_dict[name] = Histo1F(name , Bins(100 , -1. ,  1.  ) );
+    name = 'met_pt'                    ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'nEmerging'                 ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
     name = 'nJet'                      ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) ); histo_dict[name] = offset(histo_dict[name])
@@ -147,6 +149,13 @@ def user_define_histos():
     name = 'vertex_ndof'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  ,  20  ) )
     name = 'vertex_pt2sum'             ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
     name = 'vertex_nTracks'            ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
+    name = 'overlap_jet_minDeltaR'     ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
+    name = 'overlap_jet_nDupTracks'    ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
+    name = 'metUnc_met_delta'          ; histo_dict[name] = Histo1F(name , Bins(100 ,-500 , 500  ) )
+    name = 'metUnc_jet_met_pt'         ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
+    name = 'metUnc_jet_met_delta_up'   ; histo_dict[name] = Histo1F(name , Bins(100 , -20 , 20   ) )
+    name = 'metUnc_jet_met_delta_dn'   ; histo_dict[name] = Histo1F(name , Bins(100 , -20 , 20   ) )
+    # name = 'metUnc_delta_met_pt'       ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
 
     # Define 2D histograms from ordered pairs of 1D histograms
     histo_2d_dict = OrderedDict()
@@ -230,6 +239,14 @@ def user_define_histos():
     for name, histo in histo_dict.iteritems():
         if name.startswith('cutflow') or name.startswith('test'):
             histo_clone = clone_object(histo, postfix='ModelingUp')
+            histo_clone_dict[histo_clone.name] = histo_clone
+    histo_dict.update(histo_clone_dict)
+    histo_clone_dict = OrderedDict()
+    for name, histo in histo_dict.iteritems():
+        if name.startswith('cutflow') or name.startswith('test'):
+            histo_clone = clone_object(histo, postfix='PileupUp')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='PileupDn')
             histo_clone_dict[histo_clone.name] = histo_clone
     histo_dict.update(histo_clone_dict)
     histo_clone_dict = OrderedDict()

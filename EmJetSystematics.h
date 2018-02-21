@@ -30,8 +30,10 @@ class EmJetSystematics
   double Calculate3dSigShift();
   double GetShifted3dSig(double in_3dSig);
   int GetDirectionJec() {return m_direction_jec;};
+  int GetDirectionPileup() {return m_direction_pileup;};
   void SetTesting(int testing) {m_testing = testing;};
   void SetDirectionJec(int direction) {m_direction_jec = direction;};
+  void SetDirectionPileup(int direction) {m_direction_pileup = direction;};
   void SetDirectionModeling(int direction) {m_direction_modeling = direction;};
   void SetDirectionPdf(int direction) {m_direction_pdf = direction;};
  private:
@@ -44,6 +46,7 @@ class EmJetSystematics
   //  1 : positive shift
   // -1 : negative shift
   int m_direction_jec;
+  int m_direction_pileup;
   int m_direction_pdf;
   int m_direction_modeling;
 
@@ -58,6 +61,7 @@ class EmJetSystematics
 EmJetSystematics::EmJetSystematics()
 {
   m_direction_jec       = 0;
+  m_direction_pileup       = 0;
   m_direction_pdf      = 0;
   m_direction_modeling  = 0;
 }
