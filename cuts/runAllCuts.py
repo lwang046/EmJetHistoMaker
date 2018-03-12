@@ -4,9 +4,9 @@ modelset = 'cuts/allmodels_withcuts.txt'
 # timestring = time.strftime("%Y-%m%d-%H%M")
 timestring = time.strftime("%Y-%m%d")
 scriptfile = 'cuts/runAllCuts-%s.sh' % (timestring)
-date = '2018-02-15'
-tag = 'acc0'
-comment = 'Add shifted pileup uncertainty histograms'
+date = '2018-03-10'
+tag = 'sys0'
+comment = 'Fill systematic testing histograms'
 with open(modelset, 'r') as csvfile, open(scriptfile, 'w+') as ofile:
     ofile.write('# %s\n' % (comment))
     ofile.write('DATE=%s; TAG=%s\n' % (date,tag))

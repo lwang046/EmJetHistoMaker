@@ -1,12 +1,13 @@
 import csv
 import time
-modelset = 'cuts/modelset_0105_combined.txt'
+# modelset = 'cuts/modelset_0105_combined.txt'
+modelset = 'cuts/emjet_cutmap_bestcuts_20180215.txt'
 # timestring = time.strftime("%Y-%m%d-%H%M")
 timestring = time.strftime("%Y-%m%d")
 scriptfile = 'cuts/runSignalCuts-%s.sh' % (timestring)
-date = '2018-02-12'
-tag = 'acc0'
-comment = 'Using emjet_hlt_efficiency_20180212_50GeV.root'
+date = '2018-03-13'
+tag = 'sys0'
+comment = 'Fill track modeling systematic histograms'
 with open(modelset, 'r') as csvfile, open(scriptfile, 'w+') as ofile:
     ofile.write('# %s\n' % (comment))
     ofile.write('DATE=%s; TAG=%s\n' % (date,tag))

@@ -78,7 +78,9 @@ class EmJetHistoMaker : public HistoMakerBase
   // Computation functions
   float DeltaR(float eta1, float phi1, float eta2, float phi2);
   int FlavourTagging(int ij);
-  TLorentzVector GetMetP4(); // Get JEC-shifted pt for met (Direction set by sys_.m_direction_jec)
+  TLorentzVector GetPartialMetP4(); // Get JEC-shifted p4 for met summed over <50GeV jets (Direction set by sys_.m_direction_jec)
+  TLorentzVector GetMetP4(); // Get JEC-shifted P4 for met (Direction set by sys_.m_direction_jec)
+
   double GetPt(int ij); // Get JEC-shifted pt for given jet (Direction set by sys_.m_direction_jec)
   double GetAlpha(int ij); // Calculate alpha for given jet
   double GetAlpha2DSig(int ij);
@@ -127,6 +129,7 @@ class EmJetHistoMaker : public HistoMakerBase
   unique_ptr<TriggerReWeighting> TriggerWeights_;
   vector<LHAPDF::PDF*> PdfMembers_;
   // Calculated variables
+  vector<bool> cutflow_;
   double event_ht_;
   // Quark index
   int dkqk_index; // Dark quark
@@ -354,6 +357,7 @@ int EmJetHistoMaker::GetEventCount(string ihistname)
 
 void EmJetHistoMaker::InitHistograms()
 {
+  cutflow_.clear();
   TH1::SetDefaultSumw2();
   histo_nTrueInt_            = unique_ptr<TH1F>(new TH1F("nTrueInt"            , "nTrueInt"            , 100 , 0. , 100.));
   histo_nTrueInt_puweighted_ = unique_ptr<TH1F>(new TH1F("nTrueInt_puweighted" , "nTrueInt_puweighted" , 100 , 0. , 100.));
@@ -387,7 +391,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   if (pileupOnly_) return;
 
   FillHltHistograms(eventnumber);
-  FillJetOverlapHistograms(eventnumber);
+  // FillJetOverlapHistograms(eventnumber);
 
   if (0) return;
 
@@ -397,6 +401,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   FillSystematicTestingHistograms(eventnumber);
 
   string tag = ""; sys_.SetDirectionJec(0);
+  FillEventHistograms(eventnumber, ""+tag);
   // Pileup systematics
   {
     sys_.SetDirectionPileup(1);
@@ -409,6 +414,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     sys_.SetDirectionModeling(0);
     FillCutflowHistograms(eventnumber, ""+tag);
     sys_.SetDirectionModeling(1);
+    FillEventHistograms(eventnumber, "__ModelingUp"+tag);
     FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
     sys_.SetDirectionModeling(0);
   }
@@ -483,7 +489,7 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   cuts[i] = cuts[i-1] && HLT_PFHT900 == 1                      ; labels[i]=( "HLT_PFHT900 == 1           ") ; i++ ;
   cuts[i] = cuts[i-1] && jet_pt->size()>=4                     ; labels[i]=( "jet_pt->size()>=4          ") ; i++ ;
   cuts[i] = cuts[i-1] && ht4 > cut_.ht                         ; labels[i]=( "ht4 > ht_min               ") ; i++ ;
-  cuts[i] = cuts[i-1] && met_pt > cut_.met                     ; labels[i]=( "met > met_min              ") ; i++ ;
+  cuts[i] = cuts[i-1] && GetMetP4().Pt() > cut_.met            ; labels[i]=( "met > met_min              ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_basic.size() == 4                 ; labels[i]=( "ijs_basic.size() == 4      ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_basic.back() == 3                 ; labels[i]=( "ijs_basic.back() == 3      ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPt(0) > cut_.pt0                   ; labels[i]=( "GetPt(0) > pt0_min         ") ; i++ ;
@@ -496,6 +502,14 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= cut_.nEmerging ; labels[i]=( "nEmerging >= nEmerging_min ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPVTrackFraction(eventnumber) > 0.1 ; labels[i]=( "PVTrackFraction > 0.1      ") ; i++ ;
   // cuts[i] = cuts[i-1] && CheckPV(eventnumber)                  ; labels[i]=( "CheckPV(eventnumber)       ") ; i++ ;
+  // Fill cutflow
+  {
+    cutflow_.clear();
+    cutflow_.reserve(nCut);
+    for (int ic = 0; ic < nCut; ic ++) {
+      cutflow_.push_back( cuts[ic] );
+    }
+  }
   float triggerWeight = TriggerWeights_->weight(ht);
   for (int ic = 0; ic < nCut; ic ++) {
     if (isData_) {
@@ -521,10 +535,10 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
     }
   }
   FillTestingHistograms(eventnumber, "");
-  FillEventHistograms(eventnumber, "");
-  if (cuts[10]) {
-    FillEventHistograms(eventnumber, "__EVTkinematic");
-  }
+  // FillEventHistograms(eventnumber, "");
+  // if (cuts[10]) {
+  //   FillEventHistograms(eventnumber, "__EVTkinematic");
+  // }
   // if (cuts[7]) {
   //   // FillEventHistograms(eventnumber, "__EVTpvpass");
   // }
@@ -544,7 +558,9 @@ void EmJetHistoMaker::FillSystematicHistograms (long eventnumber)
       // OUTPUT((*track_ipXY)[ij][itk]);
       // histo_->hist1d_double["sys_track_ipXY"]->Fill( abs((*track_ipXY)[ij][itk]) , w);
       histo_->hist1d_double["sys_log_track_ipXY"]->Fill( TMath::Log10(TMath::Abs((*track_ipXY)[ij][itk])) , w);
-      histo_->hist1d_double["sys_log_track_ipXYSig"]->Fill( TMath::Log10(TMath::Abs((*track_ipXYSig)[ij][itk])) , w);
+      // histo_->hist1d_double["sys_log_track_ipXYSig"]->Fill( TMath::Log10(TMath::Abs((*track_ipXYSig)[ij][itk])) , w);
+      // double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( ((*track_ipXYSig)[ij][itk]), 2.0 );
+      // alpha3d_dz = 0.01 for cutset_0105
       double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/0.01, 2.0) + TMath::Power((*track_ipXYSig)[ij][itk], 2.0);
       double tk3dsig  = TMath::Sqrt(tk3dsig2);
       histo_->hist1d_double["sys_track_3dSig"]->Fill(tk3dsig);
@@ -607,15 +623,26 @@ void EmJetHistoMaker::FillTestingHistograms(long eventnumber, string tag)
   }
 
   // :METUNC: MET uncertainty histograms
+  bool doMetUncTesting = false;
+  if (doMetUncTesting)
   {
-    sys_.SetDirectionJec(0)  ; double jet_met_pt    = GetMetP4().Pt() ;
-    sys_.SetDirectionJec(1)  ; double jet_met_pt_up = GetMetP4().Pt() ;
-    sys_.SetDirectionJec(-1) ; double jet_met_pt_dn = GetMetP4().Pt() ;
+    TLorentzVector rawMetP4;
+    rawMetP4.SetPtEtaPhiE(met_pt, 0., met_phi, 0);
+    // sys_.SetDirectionJec(0)  ; double jet_met_pt    = GetPartialMetP4().Pt() ;
+    // sys_.SetDirectionJec(1)  ; double jet_met_pt_up = GetPartialMetP4().Pt() ;
+    // sys_.SetDirectionJec(-1) ; double jet_met_pt_dn = GetPartialMetP4().Pt() ;
+    sys_.SetDirectionJec(0)  ; TLorentzVector jet_met_p4    = GetPartialMetP4() ;
+    sys_.SetDirectionJec(1)  ; TLorentzVector jet_met_p4_up = GetPartialMetP4() ;
+    sys_.SetDirectionJec(-1) ; TLorentzVector jet_met_p4_dn = GetPartialMetP4() ;
     sys_.SetDirectionJec(0)  ;
-    histo_->hist1d["metUnc_met_delta"]->Fill(met_pt - jet_met_pt, w);
-    histo_->hist1d["metUnc_jet_met_pt"]->Fill(jet_met_pt, w);
-    histo_->hist1d["metUnc_jet_met_delta_up"]->Fill(jet_met_pt_up - jet_met_pt, w);
-    histo_->hist1d["metUnc_jet_met_delta_dn"]->Fill(jet_met_pt_dn - jet_met_pt, w);
+    histo_->hist1d["metUnc_met_delta_up"]->Fill( (jet_met_p4_up - jet_met_p4).Pt(), w);
+    histo_->hist1d["metUnc_met_delta_dn"]->Fill( (jet_met_p4_dn - jet_met_p4).Pt(), w);
+    histo_->hist1d["metUnc_met_pt_up"]->Fill( (jet_met_p4_up - jet_met_p4 + rawMetP4).Pt(), w);
+    histo_->hist1d["metUnc_met_pt_dn"]->Fill( (jet_met_p4_dn - jet_met_p4 + rawMetP4).Pt(), w);
+    // histo_->hist1d["metUnc_met_delta"]->Fill(met_pt - jet_met_pt, w);
+    // histo_->hist1d["metUnc_jet_met_pt"]->Fill(jet_met_pt, w);
+    // histo_->hist1d["metUnc_jet_met_delta_up"]->Fill(jet_met_pt_up - jet_met_pt, w);
+    // histo_->hist1d["metUnc_jet_met_delta_dn"]->Fill(jet_met_pt_dn - jet_met_pt, w);
   }
 }
 
@@ -627,9 +654,12 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   {
     int nTrack = 0;
     for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
-      if ( SelectTrack(ij, itk) ) {
+      if ( SelectTrack(ij, itk) && (*track_pt)[ij][itk] > 1.0 ) {
         FillTrackHistograms(eventnumber, ij, itk, ""+tag);
         nTrack++;
+        if ( (*jet_nDarkPions)[ij] >= 5 ) {
+          FillTrackHistograms(eventnumber, ij, itk, "__TKdarkjet"+tag);
+        }
       }
     }
     histo_->hist1d["jet_nTrack"+tag]->Fill(nTrack, w);
@@ -639,6 +669,11 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   histo_->hist1d["jet_pt"+tag]->Fill((*jet_pt)[ij], w);
   histo_->hist1d["jet_eta"+tag]->Fill((*jet_eta)[ij], w);
   histo_->hist1d["jet_phi"+tag]->Fill((*jet_phi)[ij], w);
+  // Calculated quantities
+  float a3dsigM = GetAlpha3DSigM(ij)   ; histo_->hist1d["jet_a3dsigM"+tag]->Fill(a3dsigM, w)   ;
+  float theta2D = (*jet_theta2D)[ij]   ; histo_->hist1d["jet_theta2D"+tag]->Fill(theta2D, w)   ;
+  float medianIP = GetfabsMedianIP(ij) ; histo_->hist1d["jet_medianIP"+tag]->Fill(medianIP, w) ;
+
 }
 
 void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, string tag)
@@ -710,19 +745,22 @@ void EmJetHistoMaker::FillHltHistograms(long eventnumber)
 
 void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber)
 {
-  // if (debug>=5) std::cout << "Entering FillJetOverlapHistograms\n";
+  if (debug==1) std::cout << "Entering FillJetOverlapHistograms\n";
 
   double w = CalculateEventWeight(eventnumber);
 
-  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+  for (unsigned ij = 0; ij < (*jet_pt).size() || ij < 4; ij++) {
+    int nDupTracks = 0;
+    double minDeltaR = 10000;
+    if (!SelectJet_basic(ij)) continue;
     TLorentzVector jet1;
     jet1.SetPtEtaPhiE( (*jet_pt)[ij], (*jet_eta)[ij], (*jet_phi)[ij], 100. );
 
     // Find deltaR to closest jet
     {
-      double minDeltaR = 10000;
       // if (debug>=5) OUTPUT(minDeltaR);
-      for (unsigned ik = ij+1; ik < (*jet_pt).size(); ik++) {
+      for (unsigned ik = 0; ik < (*jet_pt).size() || ik < 4; ik++) {
+        if (!SelectJet_basic(ik)) continue;
         TLorentzVector jet2;
         jet2.SetPtEtaPhiE( (*jet_pt)[ik], (*jet_eta)[ik], (*jet_phi)[ik], 100. );
         double deltaR = jet1.DeltaR(jet2);
@@ -732,9 +770,8 @@ void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber)
         }
         // Find duplicate tracks
         if (deltaR < 0.8) {
-        // if (1) {
+          // if (1) {
           // std::cout << "Looping over tracks in jet 1\n";
-          int nDupTracks = 0;
           for (unsigned itk=0; itk< (*track_pt)[ij].size(); itk++){
             if ( !SelectTrack(ij, itk) ) continue;
             // OUTPUT(itk);
@@ -747,10 +784,10 @@ void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber)
               nDupTracks++;
             }
           }
-          histo_->hist1d["overlap_jet_nDupTracks"]->Fill(nDupTracks, w);
         }
+        histo_->hist1d["overlap_jet_minDeltaR"]->Fill(minDeltaR, w);
+        histo_->hist1d["overlap_jet_nDupTracks"]->Fill(nDupTracks, w);
       }
-      histo_->hist1d["overlap_jet_minDeltaR"]->Fill(minDeltaR, w);
     }
 
   }
@@ -916,7 +953,11 @@ bool EmJetHistoMaker::SelectJet_basic(int ij)
 {
   // Count number of tracks
   int nTrackPassingCut = 0;
+  // OUTPUT((*track_pt)[ij].size());
   for (unsigned itk = 0; itk < (*track_pt)[ij].size(); itk++) {
+    // OUTPUT(file_);
+    // OUTPUT((*track_pt)[ij].size());
+    // OUTPUT(event);
     if( SelectTrack(ij, itk) ) {
       if( (*track_pt)[ij][itk] > 1.0 ) {
         nTrackPassingCut++;
@@ -1040,7 +1081,7 @@ EmJetHistoMaker::VerifyHistograms()
 }
 
 TLorentzVector
-EmJetHistoMaker::GetMetP4() // Get JEC-shifted pt for met (Direction set by sys_.m_direction_jec)
+EmJetHistoMaker::GetPartialMetP4() // Get JEC-shifted p4 for met summed over <50GeV jets (Direction set by sys_.m_direction_jec)
 {
   TLorentzVector p4_total;
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
@@ -1048,9 +1089,28 @@ EmJetHistoMaker::GetMetP4() // Get JEC-shifted pt for met (Direction set by sys_
     jet.SetPtEtaPhiE( GetPt(ij), (*jet_eta)[ij], (*jet_phi)[ij], 100. );
     p4_total += jet;
   }
-  return p4_total;
+  p4_total.SetZ(0.);
+  return (-p4_total);
 }
 
+TLorentzVector
+EmJetHistoMaker::GetMetP4() // Get JEC-shifted P4 for met (Direction set by sys_.m_direction_jec)
+{
+  TLorentzVector rawMetP4;
+  rawMetP4.SetPtEtaPhiE(met_pt, 0., met_phi, 0);
+  TLorentzVector p4sum_shifted, p4sum_central;
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    TLorentzVector jet_shifted; jet_shifted.SetPtEtaPhiE( GetPt(ij)     , (*jet_eta)[ij] , (*jet_phi)[ij] , 100. );
+    TLorentzVector jet_central; jet_central.SetPtEtaPhiE( (*jet_pt)[ij] , (*jet_eta)[ij] , (*jet_phi)[ij] , 100. );
+    p4sum_shifted += jet_shifted;
+    p4sum_central += jet_central;
+  }
+  TLorentzVector met_shifted = - p4sum_shifted;
+  TLorentzVector met_central = - p4sum_central;
+  met_shifted.SetZ(0.);
+  met_central.SetZ(0.);
+  return (rawMetP4 + met_shifted - met_central);
+}
 
 double
 EmJetHistoMaker::GetPt(int ij) // Get JEC-shifted pt for given jet (Direction set by sys_.m_direction_jec)
