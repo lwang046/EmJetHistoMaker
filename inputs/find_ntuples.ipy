@@ -1,4 +1,5 @@
 #!/usr/bin/env ipython
+import os
 import subprocess
 import argparse
 parser = argparse.ArgumentParser()
@@ -24,27 +25,30 @@ import sys
 checkForZombie = False
 
 # Make output directory
-!mkdir $args.outputDirectory
-for path in args.paths:
-    samplename = path.split('/')[6] # /store/user/yoshin/EmJetAnalysis/basedir/SAMPLENAME/
-    print samplename
-    if args.label:
-        outputfilename = '%s_%s.txt' % (samplename, args.label)
-    else:
-        outputfilename = '%s.txt' % (samplename)
-    outputfilepath = args.outputDirectory + '/' + outputfilename
-    outputfile = open(outputfilepath, 'w')
-    # !find $path | grep ntuple | grep -v failed > $outputfilename
-    ntuples = !find $path | grep ntuple | grep -v failed
-    for nt in ntuples:
-        if checkForZombie:
-            f = rt.TFile(nt)
-            if f.IsZombie():
-                print 'Ignoring zombie file: ' + nt
+if os.path.exists(args.outputDirectory):
+    print 'Error: Directory %s already exists' % (args.outputDirectory)
+else:
+    !mkdir $args.outputDirectory
+    for path in args.paths:
+        samplename = path.split('/')[6] # /store/user/yoshin/EmJetAnalysis/basedir/SAMPLENAME/
+        print samplename
+        if args.label:
+            outputfilename = '%s_%s.txt' % (samplename, args.label)
+        else:
+            outputfilename = '%s.txt' % (samplename)
+        outputfilepath = args.outputDirectory + '/' + outputfilename
+        outputfile = open(outputfilepath, 'a')
+        # !find $path | grep ntuple | grep -v failed > $outputfilename
+        ntuples = !find $path | grep ntuple | grep -v failed
+        for nt in ntuples:
+            if checkForZombie:
+                f = rt.TFile(nt)
+                if f.IsZombie():
+                    print 'Ignoring zombie file: ' + nt
+                else:
+                    outputfile.write(nt + '\n')
+                    # !echo $nt > $outputfilepath
             else:
                 outputfile.write(nt + '\n')
-                # !echo $nt > $outputfilepath
-        else:
-            outputfile.write(nt + '\n')
 
 

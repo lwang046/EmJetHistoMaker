@@ -55,7 +55,7 @@ class EmJetHistoMaker : public HistoMakerBase
   void InitHistograms();
   void FillEventCount (long eventCountPreTrigger);
   void FillHistograms    (long eventnumber);
-  void FillCutflowHistograms (long eventnumber, string tag);
+  void FillCutflowHistograms (long eventnumber, string tag); // Fill cutflow histograms and fill cutflow_ member variable
   void FillSystematicHistograms (long eventnumber);
   void FillSystematicTestingHistograms (long eventnumber);
   void FillEventHistograms  (long eventnumber, string tag);
@@ -402,6 +402,11 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
 
   string tag = ""; sys_.SetDirectionJec(0);
   FillEventHistograms(eventnumber, ""+tag);
+  sys_.SetDirectionModeling(0);
+  FillCutflowHistograms(eventnumber, ""+tag);
+  if (cutflow_[10])   FillEventHistograms(eventnumber, "__EVTkinematic"+tag);
+  if (cutflow_[12])   FillEventHistograms(eventnumber, "__EVTpvpass"+tag);
+
   // Pileup systematics
   {
     sys_.SetDirectionPileup(1);
@@ -410,6 +415,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     FillCutflowHistograms(eventnumber, "__PileupDn"+tag);
     sys_.SetDirectionPileup(0);
   }
+  // All other systematics
   {
     sys_.SetDirectionModeling(0);
     FillCutflowHistograms(eventnumber, ""+tag);
@@ -436,6 +442,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   }
 }
 
+// Fill cutflow histograms and fill cutflow_ member variable
 void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
 {
   double w = CalculateEventWeight(eventnumber);
@@ -673,6 +680,7 @@ void EmJetHistoMaker::FillJetHistograms(long eventnumber, int ij, string tag)
   float a3dsigM = GetAlpha3DSigM(ij)   ; histo_->hist1d["jet_a3dsigM"+tag]->Fill(a3dsigM, w)   ;
   float theta2D = (*jet_theta2D)[ij]   ; histo_->hist1d["jet_theta2D"+tag]->Fill(theta2D, w)   ;
   float medianIP = GetfabsMedianIP(ij) ; histo_->hist1d["jet_medianIP"+tag]->Fill(medianIP, w) ;
+  histo_->hist1d["jet_medianIP2"+tag]->Fill(medianIP, w) ;
 
 }
 

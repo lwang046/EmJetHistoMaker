@@ -86,6 +86,7 @@ def user_define_histos():
     name = 'jet_a3dsigM'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     name = 'jet_theta2D'               ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'jet_medianIP'              ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
+    name = 'jet_medianIP2'             ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 0.1  ) )
     # name = 'jet_alphaMax_dz'           ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     # name = 'jet_alphaMax_dz1um'        ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
     # name = 'jet_alphaMax_dz2um'        ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
@@ -222,9 +223,9 @@ def user_define_histos():
         if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_':
             histo_clone = clone_object(histo, postfix='ModelingUp')
             histo_clone_dict[histo_clone.name] = histo_clone
-            histo_clone = clone_object(histo, postfix='EVTpvpass')
-            histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='EVTkinematic')
+            histo_clone_dict[histo_clone.name] = histo_clone
+            histo_clone = clone_object(histo, postfix='EVTpvpass')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='EVTallpass')
             histo_clone_dict[histo_clone.name] = histo_clone
