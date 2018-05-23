@@ -36,6 +36,7 @@ using std::unique_ptr;
 #endif
 
 const int debug = 5;
+const int nCut = 16;
 
 class EmJetHistos;
 class EmJetSample;
@@ -56,6 +57,8 @@ class EmJetHistoMaker : public HistoMakerBase
   void FillEventCount (long eventCountPreTrigger);
   void FillHistograms    (long eventnumber);
   void FillCutflowHistograms (long eventnumber, string tag); // Fill cutflow histograms and fill cutflow_ member variable
+  bool SelectEvent_basic (long eventnumber); // Fill cutflow histograms and fill cutflow_ member variable
+  bool SelectEvent_emerging (long eventnumber); // Fill cutflow histograms and fill cutflow_ member variable
   void FillSystematicHistograms (long eventnumber);
   void FillSystematicTestingHistograms (long eventnumber);
   void FillEventHistograms  (long eventnumber, string tag);
@@ -64,7 +67,7 @@ class EmJetHistoMaker : public HistoMakerBase
   void FillTrackHistograms  (long eventnumber, int ij, int itk, string tag);
   void FillPileupHistograms (long eventnumber, string tag);
   void FillHltHistograms    (long eventnumber);
-  void FillJetOverlapHistograms    (long eventnumber);
+  void FillJetOverlapHistograms    (long eventnumber, string tag);
   void PrintEvent (long eventnumber, string comment);
   int SetTree(string ifilename);
   int SetTree();
@@ -85,11 +88,13 @@ class EmJetHistoMaker : public HistoMakerBase
   double GetAlpha(int ij); // Calculate alpha for given jet
   double GetAlpha2DSig(int ij);
   double GetAlpha3DSigM(int ij);
+  double GetAlpha3DSigM_NoOverlap(int ij);
   double GetLTKFrac(int ij);
   double GetNonPUFrac(int ij);
   double GetFrac2DSig(int ij);
   double GetMedianIP(int ij);
   double GetfabsMedianIP(int ij);
+  double GetfabsMedianIP_NoOverlap(int ij);
   int GetNTrack(int ij);
   bool GetSignalPartonIndex(long eventnumber);
   bool PartonJetMatching(int ij, int igp);
@@ -305,6 +310,7 @@ int EmJetHistoMaker::SetCut(EmJetCut cut)
   // sys_.SetTesting(1);
   // sys_.SetFilenames("/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-JetHT_G1.root", "/home/yhshin/data/condor_output/2017-11-08/histos-sys1/histo-QCD.root");
   sys_.SetModelingFilenames("/home/yhshin/data/condor_output/2017-12-08/histos-sys0/histo-DataGH.root", "/home/yhshin/data/condor_output/2017-12-08/histos-sys1/histo-QCD.root");
+  sys_.SetModelingWidths(0.00084655, 0.00246082); // ipXY and Z smearing widths
   TNamed cutname("cutname", cut_.name);
   cutname.Write();
   if (debug>=5) OUTPUT(sys_.CalculateIpXYShift());
@@ -391,7 +397,6 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
   if (pileupOnly_) return;
 
   FillHltHistograms(eventnumber);
-  // FillJetOverlapHistograms(eventnumber);
 
   if (0) return;
 
@@ -402,10 +407,6 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
 
   string tag = ""; sys_.SetDirectionJec(0);
   FillEventHistograms(eventnumber, ""+tag);
-  sys_.SetDirectionModeling(0);
-  FillCutflowHistograms(eventnumber, ""+tag);
-  if (cutflow_[10])   FillEventHistograms(eventnumber, "__EVTkinematic"+tag);
-  if (cutflow_[12])   FillEventHistograms(eventnumber, "__EVTpvpass"+tag);
 
   // Pileup systematics
   {
@@ -415,15 +416,40 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     FillCutflowHistograms(eventnumber, "__PileupDn"+tag);
     sys_.SetDirectionPileup(0);
   }
-  // All other systematics
+  // JEC Central
   {
     sys_.SetDirectionModeling(0);
     FillCutflowHistograms(eventnumber, ""+tag);
+    if (cutflow_[10])   FillEventHistograms(eventnumber, "__EVTkinematic"+tag);
+    if (cutflow_[12])   FillEventHistograms(eventnumber, "__EVTpvpass"+tag);
+    // FillJetOverlapHistograms(eventnumber, ""+tag);
+    if (cutflow_[10])   FillJetOverlapHistograms(eventnumber, "__EVTkinematic"+tag);
+    // if (cutflow_[nCut-1])   FillJetOverlapHistograms(eventnumber, "__EVTallpass"+tag);
     sys_.SetDirectionModeling(1);
     FillEventHistograms(eventnumber, "__ModelingUp"+tag);
-    FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
+    for(int i=0; i<1; i++) {
+    // for(int i=0; i<100; i++) {
+      FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
+      // histo_->hist1d["sys_acc_den_modeling"]->Fill(i+0.5, cutflow_[1]*w );
+      // histo_->hist1d["sys_acc_num_modeling"]->Fill(i+0.5, cutflow_[nCut-1]*w );
+    }
+    // Smeared modeling systematic
+    // if (cutflow_[12])
+    {
+      // OUTPUT("Checking");
+      if (SelectEvent_basic(eventnumber)) {
+        // OUTPUT("Checking -- basic");
+        for(int i=0; i<100; i++) {
+          histo_->hist1d["sys_acc_den_modeling"]->Fill(i+0.5, w );
+          if (SelectEvent_emerging(eventnumber))
+            // OUTPUT("Checking -- basic -- emerging");
+          histo_->hist1d["sys_acc_num_modeling"]->Fill(i+0.5, w );
+        }
+      }
+    }
     sys_.SetDirectionModeling(0);
   }
+  // JEC Up
   tag = "__PtUp"; sys_.SetDirectionJec(1);
   {
     sys_.SetDirectionModeling(0);
@@ -432,6 +458,7 @@ void EmJetHistoMaker::FillHistograms(long eventnumber)
     FillCutflowHistograms(eventnumber, "__ModelingUp"+tag);
     sys_.SetDirectionModeling(0);
   }
+  // JEC Down
   tag = "__PtDn"; sys_.SetDirectionJec(-1);
   {
     sys_.SetDirectionModeling(0);
@@ -489,7 +516,7 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
       ijs_emerging.push_back(ij);
     }
   }
-  const int nCut = 16;
+  // const int nCut = 16; # Defined as file-level const
   bool cuts[nCut]; string labels[nCut];
   int i=0;
   cuts[0] = true                                               ; labels[0]=( "nocut                      ") ; i++ ;
@@ -508,6 +535,7 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1              ; labels[i]=( "nEmerging >= 1             ") ; i++ ;
   cuts[i] = cuts[i-1] && ijs_emerging.size() >= cut_.nEmerging ; labels[i]=( "nEmerging >= nEmerging_min ") ; i++ ;
   cuts[i] = cuts[i-1] && GetPVTrackFraction(eventnumber) > 0.1 ; labels[i]=( "PVTrackFraction > 0.1      ") ; i++ ;
+  // cuts[i] = cuts[i-1] && ijs_emerging.size() == cut_.nEmerging ; labels[i]=( "nEmerging == nEmerging_min ") ; i++ ;
   // cuts[i] = cuts[i-1] && CheckPV(eventnumber)                  ; labels[i]=( "CheckPV(eventnumber)       ") ; i++ ;
   // Fill cutflow
   {
@@ -554,6 +582,97 @@ void EmJetHistoMaker::FillCutflowHistograms (long eventnumber, string tag)
   // }
 }
 
+bool EmJetHistoMaker::SelectEvent_basic (long eventnumber)
+{
+  if (debug==1) std::cout << "Entering SelectEvent_basic" << std::endl;
+
+  double ht4 = 0;
+  for (unsigned ij = 0; ij < 4 && ij < (*jet_pt).size(); ij++) {
+    ht4 += GetPt(ij);
+  }
+  // Calculate ht
+  double ht = 0;
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    ht += GetPt(ij);
+  }
+  // Find basic jets
+  vector<int> ijs_basic;
+  for (unsigned ij = 0; ij < jet_pt->size(); ij++) {
+    if ( SelectJet_basic(ij) ) {
+      ijs_basic.push_back(ij);
+    }
+    if ( ijs_basic.size() == 4 ) break;
+  }
+  // // Find emerging jets
+  // vector<int> ijs_emerging;
+  // for (unsigned ij = 0; ij < std::min( int(jet_pt->size()), 4 ); ij++) {
+  //   if ( SelectJet_basic(ij) && SelectJet_emerging(ij) ) {
+  //     ijs_emerging.push_back(ij);
+  //   }
+  // }
+  // const int nCut = 16; # Defined as file-level const
+  bool cuts[nCut]; string labels[nCut];
+  int i=0;
+  bool result = true;
+  cuts[0] = true                                               ; labels[0]=( "nocut                      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && HLT_PFHT900 == 1                      ; labels[i]=( "HLT_PFHT900 == 1           ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && jet_pt->size()>=4                     ; labels[i]=( "jet_pt->size()>=4          ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && ht4 > cut_.ht                         ; labels[i]=( "ht4 > ht_min               ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && GetMetP4().Pt() > cut_.met            ; labels[i]=( "met > met_min              ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && ijs_basic.size() == 4                 ; labels[i]=( "ijs_basic.size() == 4      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && ijs_basic.back() == 3                 ; labels[i]=( "ijs_basic.back() == 3      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && GetPt(0) > cut_.pt0                   ; labels[i]=( "GetPt(0) > pt0_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && GetPt(1) > cut_.pt1                   ; labels[i]=( "GetPt(1) > pt1_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && GetPt(2) > cut_.pt2                   ; labels[i]=( "GetPt(2) > pt2_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && GetPt(3) > cut_.pt3                   ; labels[i]=( "GetPt(3) > pt3_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && (*pv_index)[0] == 0                   ; labels[i]=( "(*pv_index)[0] == 0        ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0                ; labels[i]=( "abs((*pv_z)[0]) < 15.0     ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && GetPVTrackFraction(eventnumber) > 0.1 ; labels[i]=( "PVTrackFraction > 0.1      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && CheckPV(eventnumber)                  ; labels[i]=( "CheckPV(eventnumber)       ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1              ; labels[i]=( "nEmerging >= 1             ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ijs_emerging.size() >= cut_.nEmerging ; labels[i]=( "nEmerging >= nEmerging_min ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ijs_emerging.size() == cut_.nEmerging ; labels[i]=( "nEmerging == nEmerging_min ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // for (int i = 0; i < 14; i++) {
+  //   OUTPUT(cuts[i]);
+  // }
+  return result;
+}
+
+bool EmJetHistoMaker::SelectEvent_emerging (long eventnumber)
+{
+  if (debug==1) std::cout << "Entering SelectEvent_emerging" << std::endl;
+  // Find emerging jets
+  vector<int> ijs_emerging;
+  for (unsigned ij = 0; ij < std::min( int(jet_pt->size()), 4 ); ij++) {
+    if ( SelectJet_basic(ij) && SelectJet_emerging(ij) ) {
+      ijs_emerging.push_back(ij);
+    }
+  }
+  // const int nCut = 16; # Defined as file-level const
+  bool cuts[nCut]; string labels[nCut];
+  int i=0;
+  bool result = true;
+  cuts[0] = true                                               ; labels[0]=( "nocut                      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && HLT_PFHT900 == 1                      ; labels[i]=( "HLT_PFHT900 == 1           ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && jet_pt->size()>=4                     ; labels[i]=( "jet_pt->size()>=4          ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ht4 > cut_.ht                         ; labels[i]=( "ht4 > ht_min               ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && GetMetP4().Pt() > cut_.met            ; labels[i]=( "met > met_min              ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ijs_basic.size() == 4                 ; labels[i]=( "ijs_basic.size() == 4      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ijs_basic.back() == 3                 ; labels[i]=( "ijs_basic.back() == 3      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && GetPt(0) > cut_.pt0                   ; labels[i]=( "GetPt(0) > pt0_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && GetPt(1) > cut_.pt1                   ; labels[i]=( "GetPt(1) > pt1_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && GetPt(2) > cut_.pt2                   ; labels[i]=( "GetPt(2) > pt2_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && GetPt(3) > cut_.pt3                   ; labels[i]=( "GetPt(3) > pt3_min         ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && (*pv_index)[0] == 0                   ; labels[i]=( "(*pv_index)[0] == 0        ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && abs((*pv_z)[0]) < 15.0                ; labels[i]=( "abs((*pv_z)[0]) < 15.0     ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && GetPVTrackFraction(eventnumber) > 0.1 ; labels[i]=( "PVTrackFraction > 0.1      ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && CheckPV(eventnumber)                  ; labels[i]=( "CheckPV(eventnumber)       ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && ijs_emerging.size() >= 1              ; labels[i]=( "nEmerging >= 1             ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  cuts[i] = cuts[i-1] && ijs_emerging.size() >= cut_.nEmerging ; labels[i]=( "nEmerging >= nEmerging_min ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  // cuts[i] = cuts[i-1] && ijs_emerging.size() == cut_.nEmerging ; labels[i]=( "nEmerging == nEmerging_min ") ; result = result && cuts[i]; if (!result) return false;  i++ ;
+  return result;
+}
+
 void EmJetHistoMaker::FillSystematicHistograms (long eventnumber)
 {
   double w = CalculateEventWeight(eventnumber);
@@ -592,6 +711,17 @@ void EmJetHistoMaker::FillSystematicTestingHistograms (long eventnumber)
       histo_->hist1d_double["systest_track_3dSig"]->Fill(shifted_tk3dsig);
     }
   }
+  // Fill smearing histograms
+  for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
+    if ( !SelectJet_basic(ij) ) continue;
+    for (unsigned itk=0; itk < (*track_pt)[ij].size(); itk++) {
+      if ( !SelectTrack(ij, itk) ) continue;
+      double ipXY_smear = sys_.GetIpXYSmearing();
+      histo_->hist1d_double["sys_track_ipXY_smear"]->Fill(ipXY_smear, w);
+      double Z_smear = sys_.GetZSmearing();
+      histo_->hist1d_double["sys_track_Z_smear"]->Fill(Z_smear, w);
+    }
+  }
   sys_.SetDirectionModeling(0);
 }
 
@@ -612,6 +742,7 @@ void EmJetHistoMaker::FillEventHistograms(long eventnumber, string tag)
   // Jet loop
   for (unsigned ij = 0; ij < (*jet_pt).size(); ij++) {
     if (ij>=4) break; // :JETCUT:
+    if ( !SelectJet_basic(ij) ) continue;
     FillJetHistograms(eventnumber, ij, ""+tag);
     // Jet cut 1
     // FillJetHistograms(eventnumber, "__JETCUT1");
@@ -692,6 +823,8 @@ void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, str
 
   double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
   double tk3dsig  = TMath::Sqrt(tk3dsig2);
+  double ipXY = (*track_ipXY)[ij][itk] + sys_.GetIpXYSmearing();
+  double deltaZ = (*pv_z)[0]-(*track_ref_z)[ij][itk] + sys_.GetZSmearing();
 
   // Existing quantities (in ntuple)
   histo_->hist1d["track_pt"+tag]->Fill((*track_pt)[ij][itk], w);
@@ -699,6 +832,9 @@ void EmJetHistoMaker::FillTrackHistograms(long eventnumber, int ij, int itk, str
   histo_->hist1d["track_phi"+tag]->Fill((*track_phi)[ij][itk], w);
   histo_->hist1d["track_ip3DSig"+tag]->Fill((*track_ip3DSig)[ij][itk], w);
   // Calculated quantities
+  histo_->hist1d["track_ipXY"+tag]->Fill(ipXY, w);
+  histo_->hist1d["track_ipXYb"+tag]->Fill(ipXY, w);
+  histo_->hist1d["track_deltaZ"+tag]->Fill(deltaZ, w);
   histo_->hist1d["track_tk3DSig"+tag]->Fill(tk3dsig, w);
 }
 
@@ -751,23 +887,45 @@ void EmJetHistoMaker::FillHltHistograms(long eventnumber)
 
 }
 
-void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber)
+void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber, string tag)
 {
   if (debug==1) std::cout << "Entering FillJetOverlapHistograms\n";
 
   double w = CalculateEventWeight(eventnumber);
 
-  for (unsigned ij = 0; ij < (*jet_pt).size() || ij < 4; ij++) {
+  for (unsigned ij = 0; ij < (*jet_pt).size() && ij < 4; ij++) {
     int nDupTracks = 0;
     double minDeltaR = 10000;
     if (!SelectJet_basic(ij)) continue;
+    // OUTPUT((*track_pt)[ij].size());
+    // OUTPUT((*track_source)[ij].size());
     TLorentzVector jet1;
     jet1.SetPtEtaPhiE( (*jet_pt)[ij], (*jet_eta)[ij], (*jet_phi)[ij], 100. );
 
+    // Calculate alpha3dsigm with only non-overlapped tracks
+    {
+      double alpha3dsigm = GetAlpha3DSigM(ij);
+      double alpha3dsigm_no = GetAlpha3DSigM_NoOverlap(ij);
+      float medianIP = GetfabsMedianIP(ij);
+      float medianIP_no = GetfabsMedianIP_NoOverlap(ij);
+      histo_->hist1d["overlap_jet_a3dsigM"]->Fill(alpha3dsigm, w);
+      histo_->hist1d["overlap_jet_a3dsigM_no"]->Fill(alpha3dsigm_no, w);
+      histo_->hist1d["overlap_jet_medianIP"]->Fill(medianIP, w);
+      histo_->hist1d["overlap_jet_medianIP_no"]->Fill(medianIP_no, w);
+      // OUTPUT(alpha3dsigm_no);
+      // OUTPUT(alpha3dsigm);
+    }
+
     // Find deltaR to closest jet
+    if (0)
     {
       // if (debug>=5) OUTPUT(minDeltaR);
-      for (unsigned ik = 0; ik < (*jet_pt).size() || ik < 4; ik++) {
+      for (unsigned ik = 0; ik < (*jet_pt).size() && ik < 4; ik++) {
+      // for (unsigned ik = ij+1; ik < (*jet_pt).size() || ik < 4; ik++) {
+        // OUTPUT(event);
+        // OUTPUT(ik);
+        // OUTPUT((*track_pt)[ik].size());
+        // OUTPUT((*track_source)[ik].size());
         if (!SelectJet_basic(ik)) continue;
         TLorentzVector jet2;
         jet2.SetPtEtaPhiE( (*jet_pt)[ik], (*jet_eta)[ik], (*jet_phi)[ik], 100. );
@@ -780,6 +938,7 @@ void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber)
         if (deltaR < 0.8) {
           // if (1) {
           // std::cout << "Looping over tracks in jet 1\n";
+          double ptsum_total=0, ptsum=0;
           for (unsigned itk=0; itk< (*track_pt)[ij].size(); itk++){
             if ( !SelectTrack(ij, itk) ) continue;
             // OUTPUT(itk);
@@ -789,9 +948,21 @@ void EmJetHistoMaker::FillJetOverlapHistograms(long eventnumber)
             track1.SetPtEtaPhiE( (*track_pt)[ij][itk], (*track_eta)[ij][itk], (*track_phi)[ij][itk], 100. );
             // OUTPUT(jet2.DeltaR(track1));
             if (jet2.DeltaR(track1) < 0.4) {
+              // // Check that jet2 has the same track
+              // for (unsigned itk2=0; itk2< (*track_pt)[ij].size(); itk2++){
+              // }
               nDupTracks++;
             }
+            else {
+              ptsum_total += (*track_pt)[ij][itk];
+              // double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
+              double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk] + sys_.GetZSmearing())/cut_.alpha3d_dz, 2.0) + TMath::Power( (*track_ipXYSig)[ij][itk], 2.0 );
+              double tk3dsig  = TMath::Sqrt(tk3dsig2);
+              if( tk3dsig< cut_.alpha3d_sig ) ptsum += (*track_pt)[ij][itk];
+            }
           }
+          double alpha3dsigm_nonoverlap = (ptsum_total>0 ? ptsum/ptsum_total: -1.);
+          double alpha3dsigm = GetAlpha3DSigM(ij);
         }
         histo_->hist1d["overlap_jet_minDeltaR"]->Fill(minDeltaR, w);
         histo_->hist1d["overlap_jet_nDupTracks"]->Fill(nDupTracks, w);
@@ -965,6 +1136,7 @@ bool EmJetHistoMaker::SelectJet_basic(int ij)
   for (unsigned itk = 0; itk < (*track_pt)[ij].size(); itk++) {
     // OUTPUT(file_);
     // OUTPUT((*track_pt)[ij].size());
+    // OUTPUT((*track_source)[ij].size());
     // OUTPUT(event);
     if( SelectTrack(ij, itk) ) {
       if( (*track_pt)[ij][itk] > 1.0 ) {
@@ -1062,6 +1234,12 @@ bool EmJetHistoMaker::SelectTrack(int ij, int itk)
   bool result3 = ( fabs((*pv_z)[0]-(*track_ref_z)[ij][itk]) ) < cut_.pu_dz ; result = result && result3;
   return result;
 }
+
+// bool EmJetHistoMaker::SelectTrack_closest(int ij, int itk)
+// {
+//   bool result = true;
+// }
+
 
 void EmJetHistoMaker::PrintEvent (long eventnumber, string comment)
 {
@@ -1172,7 +1350,8 @@ double EmJetHistoMaker::GetAlpha3DSigM(int ij)
     if ( !SelectTrack(ij, itk) ) continue;
 
     ptsum_total += (*track_pt)[ij][itk];
-    double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
+    // double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
+    double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk] + sys_.GetZSmearing())/cut_.alpha3d_dz, 2.0) + TMath::Power( (*track_ipXYSig)[ij][itk], 2.0 );
     double tk3dsig  = TMath::Sqrt(tk3dsig2);
     if( tk3dsig< cut_.alpha3d_sig ) ptsum += (*track_pt)[ij][itk];
   }
@@ -1181,6 +1360,40 @@ double EmJetHistoMaker::GetAlpha3DSigM(int ij)
   return alpha3dsigm;
 }
 
+double EmJetHistoMaker::GetAlpha3DSigM_NoOverlap(int ij)
+{
+  TLorentzVector jet1;
+  jet1.SetPtEtaPhiE( (*jet_pt)[ij], (*jet_eta)[ij], (*jet_phi)[ij], 100. );
+  double ptsum_total=0, ptsum=0;
+  for (unsigned itk=0; itk< (*track_pt)[ij].size(); itk++){
+    if ( !SelectTrack(ij, itk) ) continue;
+    // Check overlap to other jets
+    TLorentzVector track1;
+    track1.SetPtEtaPhiE( (*track_pt)[ij][itk], (*track_eta)[ij][itk], (*track_phi)[ij][itk], 100. );
+    bool overlap = false;
+    for (unsigned ik = 0; ik < (*jet_pt).size() && ik < 4; ik++) {
+      if (ij==ik) continue; // Don't care about overlap with self
+      if (!SelectJet_basic(ik)) continue; // Don't care about overlap with jets failing basic selection
+      TLorentzVector jet2;
+      jet2.SetPtEtaPhiE( (*jet_pt)[ik], (*jet_eta)[ik], (*jet_phi)[ik], 100. );
+      double deltaR_tojet = jet1.DeltaR(jet2);
+      if (deltaR_tojet > 0.8) continue; // Jet is too far, no overlap possible
+      double deltaR = track1.DeltaR(jet2);
+      if (deltaR < 0.4) overlap = true;
+      if (overlap) break;
+    }
+    if (overlap) continue;
+
+    ptsum_total += (*track_pt)[ij][itk];
+    // double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk])/cut_.alpha3d_dz, 2.0) + TMath::Power( sys_.GetShifted3dSig((*track_ipXYSig)[ij][itk]), 2.0 );
+    double tk3dsig2 = TMath::Power(((*pv_z)[0]-(*track_ref_z)[ij][itk] + sys_.GetZSmearing())/cut_.alpha3d_dz, 2.0) + TMath::Power( (*track_ipXYSig)[ij][itk], 2.0 );
+    double tk3dsig  = TMath::Sqrt(tk3dsig2);
+    if( tk3dsig< cut_.alpha3d_sig ) ptsum += (*track_pt)[ij][itk];
+  }
+
+  double alpha3dsigm = (ptsum_total>0 ? ptsum/ptsum_total: -1.);
+  return alpha3dsigm;
+}
 
 double EmJetHistoMaker::GetLTKFrac(int ij)
 {
@@ -1246,7 +1459,48 @@ double EmJetHistoMaker::GetfabsMedianIP(int ij)
   vector<double> vector_ipXY;
   for (unsigned itk=0; itk<(*track_pt)[ij].size(); itk++) {
     if ( !SelectTrack(ij, itk) ) continue;
-    double tk_ipXY = sys_.GetShiftedIpXY((*track_ipXY)[ij][itk]) ;
+    // double tk_ipXY = sys_.GetShiftedIpXY((*track_ipXY)[ij][itk]) ;
+    double tk_ipXY = (*track_ipXY)[ij][itk] + sys_.GetIpXYSmearing();
+    vector_ipXY.push_back( fabs(tk_ipXY) );
+  }
+
+  std::sort(vector_ipXY.begin(), vector_ipXY.end());
+  int nTrack = vector_ipXY.size();
+  if ( nTrack>0 ) {
+    if ( nTrack%2 ==0 )
+      medip = (vector_ipXY[nTrack/2 - 1] + vector_ipXY[nTrack/2]) / 2;
+    else
+      medip = (vector_ipXY[nTrack/2]);
+  }
+  return medip;
+}
+
+double EmJetHistoMaker::GetfabsMedianIP_NoOverlap(int ij)
+{
+  TLorentzVector jet1;
+  jet1.SetPtEtaPhiE( (*jet_pt)[ij], (*jet_eta)[ij], (*jet_phi)[ij], 100. );
+  double medip = -10.0;
+  vector<double> vector_ipXY;
+  for (unsigned itk=0; itk<(*track_pt)[ij].size(); itk++) {
+    if ( !SelectTrack(ij, itk) ) continue;
+    // Check overlap to other jets
+    TLorentzVector track1;
+    track1.SetPtEtaPhiE( (*track_pt)[ij][itk], (*track_eta)[ij][itk], (*track_phi)[ij][itk], 100. );
+    bool overlap = false;
+    for (unsigned ik = 0; ik < (*jet_pt).size() && ik < 4; ik++) {
+      if (ij==ik) continue; // Don't care about overlap with self
+      if (!SelectJet_basic(ik)) continue; // Don't care about overlap with jets failing basic selection
+      TLorentzVector jet2;
+      jet2.SetPtEtaPhiE( (*jet_pt)[ik], (*jet_eta)[ik], (*jet_phi)[ik], 100. );
+      double deltaR_tojet = jet1.DeltaR(jet2);
+      if (deltaR_tojet > 0.8) continue; // Jet is too far, no overlap possible
+      double deltaR = track1.DeltaR(jet2);
+      if (deltaR < 0.4) overlap = true;
+      if (overlap) break;
+    }
+    if (overlap) continue;
+    // double tk_ipXY = sys_.GetShiftedIpXY((*track_ipXY)[ij][itk]) ;
+    double tk_ipXY = (*track_ipXY)[ij][itk] + sys_.GetIpXYSmearing();
     vector_ipXY.push_back( fabs(tk_ipXY) );
   }
 

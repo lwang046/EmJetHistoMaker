@@ -53,6 +53,7 @@ def user_define_histos():
     histo_dict = OrderedDict()
     name = 'cutflow'                   ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
     name = 'cutflow2'                  ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
+    name = 'cutflow2'                  ; histo_dict[name] = Histo1F(name , Bins( 25 , 0   ,  25  ) );
     name = 'weight_trigger'            ; histo_dict[name] = Histo1F(name , Bins(100 , 0   ,  10. ) );
     name = 'pdfshift'                  ; histo_dict[name] = Histo1F(name , Bins(100 , -1. ,  1.  ) );
     name = 'met_pt'                    ; histo_dict[name] = Histo1F(name , Bins(100 , 0   , 1000 ) )
@@ -122,13 +123,18 @@ def user_define_histos():
     name = 'sys_track_3dSig'           ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 50.  ) )
     name = 'systest_log_track_ipXY'    ; histo_dict[name] = Histo1F(name , Bins(2000, -8. , 2.   ) )
     name = 'systest_track_3dSig'       ; histo_dict[name] = Histo1D(name , Bins(2000, -1. , 50.  ) )
+    name = 'sys_track_ipXY_smear'      ; histo_dict[name] = Histo1D(name , Bins(2000, -0.01 , 0.01 ) )
+    name = 'sys_track_Z_smear'         ; histo_dict[name] = Histo1D(name , Bins(2000, -0.02 , 0.02 ) )
+    name = 'sys_acc_den_modeling'      ; histo_dict[name] = Histo1F(name , Bins(1000,  0.0  , 1000 ) )
+    name = 'sys_acc_num_modeling'      ; histo_dict[name] = Histo1F(name , Bins(1000,  0.0  , 1000 ) )
     name = 'test_jet_medianIP'         ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'test_jet_medianAbsIP'      ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
     name = 'track_pt'                  ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
     name = 'track_eta'                 ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
     name = 'track_phi'                 ; histo_dict[name] = Histo1F(name , Bins(100 , -5  , 5    ) )
+    name = 'track_deltaZ'              ; histo_dict[name] = Histo1F(name , Bins(1000, -0.10, 0.10 ) )
     name = 'track_ipXY'                ; histo_dict[name] = Histo1F(name , vbins['track_ipXY']     )
-    name = 'track_ipXYb'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 2.  ) )
+    name = 'track_ipXYb'               ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 0.1  ) )
     name = 'track_ipSig'               ; histo_dict[name] = Histo1F(name , vbins['track_ipSig']    )
     name = 'track_logIpSig'            ; histo_dict[name] = Histo1F(name , Bins(100 , -5  ,   5  ) )
     name = 'track_ip3DSig'             ; histo_dict[name] = Histo1F(name , vbins['track_ipSig']    )
@@ -155,6 +161,10 @@ def user_define_histos():
     name = 'vertex_nTracks'            ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
     name = 'overlap_jet_minDeltaR'     ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 10.  ) )
     name = 'overlap_jet_nDupTracks'    ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 100  ) )
+    name = 'overlap_jet_a3dsigM'       ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
+    name = 'overlap_jet_a3dsigM_no'    ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 1.   ) )
+    name = 'overlap_jet_medianIP'      ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 0.5  ) )
+    name = 'overlap_jet_medianIP_no'   ; histo_dict[name] = Histo1F(name , Bins(100 , 0.  , 0.5  ) )
     name = 'metUnc_met_delta_up'       ; histo_dict[name] = Histo1F(name , Bins(100 ,-100 , 100  ) )
     name = 'metUnc_met_delta_dn'       ; histo_dict[name] = Histo1F(name , Bins(100 ,-100 , 100  ) )
     name = 'metUnc_met_pt_up'          ; histo_dict[name] = Histo1F(name , Bins(100 ,   0 , 1000 ) )
@@ -220,7 +230,7 @@ def user_define_histos():
     # Event plot variations
     histo_clone_dict = OrderedDict()
     for name, histo in histo_dict.iteritems():
-        if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_':
+        if name[:4]=='jet_' or name[:6]=='track_' or name[:7]=='vertex_' or name[:8]=='overlap_':
             histo_clone = clone_object(histo, postfix='ModelingUp')
             histo_clone_dict[histo_clone.name] = histo_clone
             histo_clone = clone_object(histo, postfix='EVTkinematic')

@@ -8,6 +8,7 @@
 #include <TH2F.h>
 #include <TMath.h>
 #include <TParameter.h>
+#include <TRandom3.h>
 
 #include "EmJetCut.h"
 
@@ -27,6 +28,7 @@ class EmJetSystematics
   void SetCut(EmJetCut cut);
   double CalculateIpXYShift();
   double GetShiftedIpXY(double ipXY_in);
+  // double GetSmearedIpXY(double ipXY_in);
   double Calculate3dSigShift();
   double GetShifted3dSig(double in_3dSig);
   int GetDirectionJec() {return m_direction_jec;};
@@ -36,10 +38,15 @@ class EmJetSystematics
   void SetDirectionPileup(int direction) {m_direction_pileup = direction;};
   void SetDirectionModeling(int direction) {m_direction_modeling = direction;};
   void SetDirectionPdf(int direction) {m_direction_pdf = direction;};
+  // Smearing method for modeling
+  void SetModelingWidths(double ipXY_width, double Z_width) {m_ipXY_width = ipXY_width; m_Z_width = Z_width;};
+  double GetIpXYSmearing();
+  double GetZSmearing();
  private:
   EmJetCut cut_;
   int debug = 1;
   int m_testing = 0; // Set to non-zero to enable testing
+  TRandom3 rand_;
 
   // Directions for systematic shifts
   //  0 : no shift
@@ -56,6 +63,8 @@ class EmJetSystematics
   string m_filename_qcd;
   double m_ipXY_shift;
   double m_3dSig_shift;
+  double m_ipXY_width;
+  double m_Z_width;
 };
 
 EmJetSystematics::EmJetSystematics()
@@ -148,6 +157,18 @@ double EmJetSystematics::GetShiftedIpXY(double ipXY_in)
   return ipXY_out;
 }
 
+// double EmJetSystematics::GetSmearedIpXY(double ipXY_in)
+// {
+//   int direction = m_direction_modeling;
+//   assert(direction==0 || direction ==1 || direction ==-1);
+//   assert(m_modeling_ready);
+//   double ipXY_out = ipXY_in + rand_.Gaus(0, );
+//   // DEBUGOUTPUT(m_ipXY_shift);
+//   // DEBUGOUTPUT(ipXY_in);
+//   // DEBUGOUTPUT(ipXY_out);
+//   return ipXY_out;
+// }
+
 double EmJetSystematics::Calculate3dSigShift()
 {
   assert(m_cut_ready>0);
@@ -211,3 +232,28 @@ double EmJetSystematics::GetShifted3dSig(double in_3dSig)
   double out_3dSig = in_3dSig * TMath::Power(m_3dSig_shift, m_direction_modeling);
   return out_3dSig;
 }
+
+double EmJetSystematics::GetIpXYSmearing()
+{
+  int direction = m_direction_modeling;
+  assert(direction==0 || direction ==1 || direction ==-1);
+  assert(m_modeling_ready);
+  if      (direction==0) return 0;
+  else if (direction==1) {
+    double smearing = rand_.Gaus(0., m_ipXY_width);
+    return smearing;
+  }
+}
+
+double EmJetSystematics::GetZSmearing()
+{
+  int direction = m_direction_modeling;
+  assert(direction==0 || direction ==1 || direction ==-1);
+  assert(m_modeling_ready);
+  if      (direction==0) return 0;
+  else if (direction==1) {
+    double smearing = rand_.Gaus(0., m_Z_width);
+    return smearing;
+  }
+}
+

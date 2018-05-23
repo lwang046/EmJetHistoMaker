@@ -35,7 +35,7 @@ class HistoMakerBase : protected BaseClass
     long LoopOverCurrentTree ();
 
   protected:
-    int reportEvery_ = 10000;
+    int reportEvery_ = 100;
     TFile* ofile_;
     TTree* tree_; // Current tree
     long nentries_; // Number of entries in current tree
